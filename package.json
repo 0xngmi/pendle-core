@@ -31,6 +31,7 @@
     "ethers": "^5.0.0",
     "got": "^11.8.1",
     "hardhat": "^2.0.6",
+    "hardhat-deploy": "^0.7.0-beta.44",
     "hardhat-typechain": "^0.3.3",
     "mathjs": "8.1.0",
     "mocha": "^8.2.1",
@@ -67,6 +68,8 @@
     "test": "yarn hardhat test --network hardhat",
     "test:all": "yarn test test/**/*.spec.*",
     "ci": "yarn hardhat compile && yarn coverage:all",
-    "format": "yarn prettier --write contracts/**/*.sol && yarn prettier --write test/**/*.ts && yarn prettier --write test/**/*.js"
+    "format": "yarn prettier --write contracts/**/*.sol && yarn prettier --write test/**/*.ts && yarn prettier --write test/**/*.js",
+    "ganache": "bash scripts/start_ganache.sh",
+    "deploy:dev": "yarn hardhat deploy --network development"
   }
 }
