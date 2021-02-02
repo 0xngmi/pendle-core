@@ -36,9 +36,7 @@ contract PendleTreasury is IPendleTreasury, Permissions {
     uint256 public constant PERCENTAGE_PRECISION = 10000; // 100%
     uint256 public fundPercentage = 500; // 5%
 
-    constructor(address _governance) Permissions(_governance) {
-        initializer = msg.sender;
-    }
+    constructor(address _governance) Permissions(_governance) {}
 
     function initialize(IERC20 _fundToken) external {
         require(msg.sender == initializer, "Pendle: forbidden");

@@ -70,6 +70,6 @@
     "ci": "yarn hardhat compile && yarn coverage:all",
     "format": "yarn prettier --write contracts/**/*.sol && yarn prettier --write test/**/*.ts && yarn prettier --write test/**/*.js",
     "ganache": "bash scripts/start_ganache.sh",
-    "deploy:dev": "yarn hardhat deploy --network development"
+    "deploy:dev": "node deploy/01_deploy_pendle.ts"
   }
 }

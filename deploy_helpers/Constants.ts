@@ -1,25 +1,26 @@
-import { BigNumber, utils } from "ethers";
+const { BigNumber, utils } = require("ethers");
 
-export type Token = {
-  address: string;
-  decimal: number;
-  owner?: string;
-};
+// export type Token = {
+//   address: string;
+//   decimal: number;
+//   owner?: string;
+// };
 
-type TokenMap = Record<string, Token>;
+// type TokenMap = Record<string, Token>;
 
-export type Constants = {
-  tokens: TokenMap;
-  misc: Record<string, any>;
-}
+// export type Constants = {
+//   tokens: TokenMap;
+//   misc: Record<string, any>;
+// };
 
-export const devConstants: Constants = {
+module.exports.devConstants = {
   misc: {
     DUMMY_GOVERNANCE_ADDRESS: "0xdac17f958d2ee523a2206206994597c13d831ec7",
-    AAVE_LENDING_POOL_CORE_ADDRESS: "0x3dfd23A6c5E8BbcFc9581d2E864a68feb6a076d3",
+    AAVE_LENDING_POOL_CORE_ADDRESS:
+      "0x3dfd23A6c5E8BbcFc9581d2E864a68feb6a076d3",
     AAVE_LENDING_POOL_ADDRESS: "0x398ec7346dcd622edc5ae82352f02be94c62d119",
     AAVE_DUMMY_REFERRAL_CODE: 0,
-    USDT_OWNER_ADDRESS: '0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828',
+    USDT_OWNER_ADDRESS: "0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828",
     FORGE_AAVE: utils.formatBytes32String("Aave"),
     ZERO_ADDRESS: "0x0000000000000000000000000000000000000000",
     MAX_ALLOWANCE: BigNumber.from(2)
@@ -47,14 +48,15 @@ export const devConstants: Constants = {
     AUSDT: {
       address: "0x71fc860F7D3A592A4a98740e39dB31d25db65ae8",
       decimal: 6,
-      owner: "0x81dfbbaF5011e3b86383f72A24793EE44ea547C5"
+      owner: "0x81dfbbaF5011e3b86383f72A24793EE44ea547C5",
     },
-  }
+  },
 };
 
-export const kovanConstants: Constants = {
+module.exports.kovanConstants = {
   misc: {
-    AAVE_LENDING_POOL_CORE_ADDRESS: "0x95D1189Ed88B380E319dF73fF00E479fcc4CFa45",
+    AAVE_LENDING_POOL_CORE_ADDRESS:
+      "0x95D1189Ed88B380E319dF73fF00E479fcc4CFa45",
     AAVE_LENDING_POOL_ADDRESS: "0x580D4Fdc4BF8f9b5ae2fb9225D584fED4AD5375c",
     AAVE_DUMMY_REFERRAL_CODE: 0,
     FORGE_AAVE: utils.formatBytes32String("Aave"),
@@ -86,5 +88,5 @@ export const kovanConstants: Constants = {
       decimal: 6,
       // owner: "0x81dfbbaF5011e3b86383f72A24793EE44ea547C5"
     },
-  }
+  },
 };
