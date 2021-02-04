@@ -22,11 +22,11 @@ const {
   IUSDTArtifact,
 } = require("../deploy_helpers/exports");
 
-const TEST_AMOUNT_TO_MINT = 1000000000;
-const TEST_AMOUNT_TO_TOKENIZE = 100000000;
-const TEST_AMOUNT_TO_BOOTSTRAP = 10000000;
+const TEST_AMOUNT_TO_MINT = 100000000000;
+const TEST_AMOUNT_TO_TOKENIZE = 1500000000;
+const TEST_AMOUNT_TO_BOOTSTRAP = 1000000000;
 const privateKey =
-  "0x0068e791b5923cbfe5ce5fd4ce2bf2efc80801abab19bdab74613e7c22f0c6d4";
+  "a3237e736cc13bf91e38c50636593727a6b16d077ca4bb0ff627290b104fa93c";
 
 const func = async function () {
   const httpProvider = new ethers.providers.JsonRpcProvider();
@@ -170,7 +170,19 @@ const func = async function () {
     constants.misc.TEST_EXPIRY
   );
 
-  const xytAddress = await pendleData.xytTokens(
+  await pendle.newYieldContracts(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_2
+  );
+
+  await pendle.newYieldContracts(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3
+  );
+
+  let xytAddress = await pendleData.xytTokens(
     constants.misc.FORGE_AAVE,
     constants.tokens.USDT.address,
     constants.misc.TEST_EXPIRY
@@ -196,7 +208,7 @@ const func = async function () {
     signer
   );
 
-  const xytContract = new ethers.Contract(
+  let xytContract = new ethers.Contract(
     xytAddress,
     IATokenArtifact.abi,
     signer
@@ -229,7 +241,7 @@ const func = async function () {
 
   console.log("test");
 
-  const pendleMarketAddress = await pendleData.getMarket(
+  let pendleMarketAddress = await pendleData.getMarket(
     constants.misc.FORGE_AAVE,
     constants.misc.FORGE_AAVE,
     xytAddress,
@@ -263,5 +275,104 @@ const func = async function () {
     { gasLimit: 8000000 }
   );
   console.log(`\tDid a test trade`);
+
+  // =============================================================================
+  console.log("----- Creating Test Pendle market 2");
+  xytAddress = await pendleData.xytTokens(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_2
+  );
+  console.log("\txytAddress:", xytAddress);
+
+  await pendle.createMarket(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_2
+  );
+
+  pendleMarketAddress = await pendleData.getMarket(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    constants.tokens.USDT.address
+  );
+
+  console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress}`);
+
+  await pendle.tokenizeYield(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_2,
+    TEST_AMOUNT_TO_TOKENIZE,
+    deployer
+  );
+
+  xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
+
+  await xytContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
+  await usdtContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved pendleMarket to spend xyt and usdt`);
+
+  await pendle.bootStrapMarket(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    usdtContract.address,
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    TEST_AMOUNT_TO_BOOTSTRAP
+  );
+  console.log(`\tBootstrapped Market`);
+
+  // =============================================================================
+  console.log("----- Creating Test Pendle market 3");
+  xytAddress = await pendleData.xytTokens(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3
+  );
+  console.log("\txytAddress:", xytAddress);
+  await pendle.createMarket(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3
+  );
+
+  pendleMarketAddress = await pendleData.getMarket(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    constants.tokens.USDT.address
+  );
+
+  console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress}`);
+
+  await pendle.tokenizeYield(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3,
+    TEST_AMOUNT_TO_TOKENIZE,
+    deployer
+  );
+
+  xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
+
+  await xytContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
+  await usdtContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved pendleMarket to spend xyt and usdt`);
+
+  await pendle.bootStrapMarket(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    usdtContract.address,
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    TEST_AMOUNT_TO_BOOTSTRAP
+  );
+  console.log(`\tBootstrapped Market`);
 };
 func();
