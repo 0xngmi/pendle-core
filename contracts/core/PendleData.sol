@@ -20,67 +20,78 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  */
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../libraries/MathLib.sol";
 import "../interfaces/IPendleData.sol";
+import "../interfaces/IPendleMarket.sol";
 import "../interfaces/IPendleMarketFactory.sol";
 import "../periphery/Permissions.sol";
 
 contract PendleData is IPendleData, Permissions {
-    mapping(address => bytes32) public override getForgeId;
-    mapping(bytes32 => mapping(bytes32 => address)) public override getMarketFactoryAddress;
-    mapping(bytes32 => address) public override getForgeAddress;
+    using SafeMath for uint256;
 
-    // getMarket[forgeId][marketFactoryId][xyt][token]
-    mapping(bytes32 => mapping(bytes32 => mapping(address => mapping(address => address))))
-        public
-        override getMarket;
+    struct MarketInfo {
+        uint80 xytWeight;
+        uint80 tokenWeight;
+        uint256 liquidity;
+    }
+
+    mapping(address => bytes32) public override getForgeId;
+    mapping(bytes32 => address) public override getForgeAddress;
+    mapping(address => bytes32) public override getMarketFactoryId;
+    mapping(bytes32 => address) public override getMarketFactoryAddress;
+
+    mapping(bytes32 => mapping(address => mapping(address => address))) public override getMarket; // getMarket[marketFactoryId][xyt][token]
     mapping(bytes32 => mapping(address => mapping(uint256 => IPendleYieldToken)))
         public
-        override otTokens;
+        override otTokens; // [forgeId][underlyingAsset][expiry]
     mapping(bytes32 => mapping(address => mapping(uint256 => IPendleYieldToken)))
         public
-        override xytTokens;
+        override xytTokens; // [forgeId][underlyingAsset][expiry]
     uint256 public override swapFee;
     uint256 public override exitFee;
-    IPendle public override core;
+    IPendleRouter public override router;
+    address public override treasury;
     mapping(address => bool) public override isMarket;
+    mapping(bytes32 => address) private markets;
+    mapping(bytes32 => MarketInfo) private marketInfo;
     address[] private allMarkets;
 
-    constructor(address _governance) Permissions(_governance) {}
+    constructor(address _governance, address _treasury) Permissions(_governance) {
+        require(_treasury != address(0), "ZERO_ADDRESS");
+        treasury = _treasury;
+    }
 
-    modifier onlyCore() {
-        require(msg.sender == address(core), "Pendle: only core");
+    modifier onlyRouter() {
+        require(msg.sender == address(router), "ONLY_ROUTER");
         _;
     }
 
     modifier onlyForge(bytes32 _forgeId) {
-        require(getForgeAddress[_forgeId] == msg.sender, "Pendle: only forge");
+        require(getForgeAddress[_forgeId] == msg.sender, "ONLY_FORGE");
         _;
     }
 
-    modifier onlyMarketFactory(bytes32 _forgeId, bytes32 _marketFactoryId) {
-        require(
-            msg.sender == getMarketFactoryAddress[_forgeId][_marketFactoryId],
-            "Pendle: only market factory"
-        );
+    modifier onlyMarketFactory(bytes32 _marketFactoryId) {
+        require(msg.sender == getMarketFactoryAddress[_marketFactoryId], "ONLY_MARKET_FACTORY");
         _;
     }
 
-    function initialize(IPendle _core) external {
-        require(msg.sender == initializer, "Pendle: forbidden");
-        require(address(_core) != address(0), "Pendle: zero address");
+    function initialize(IPendleRouter _router) external {
+        require(msg.sender == initializer, "FORBIDDEN");
+        require(address(_router) != address(0), "ZERO_ADDRESS");
 
         initializer = address(0);
-        core = _core;
+        router = _router;
     }
 
-    function setCore(IPendle _core) external override initialized onlyGovernance {
-        require(address(_core) != address(0), "Pendle: zero address");
+    function setTreasury(address _treasury) external override initialized onlyGovernance {
+        require(_treasury != address(0), "ZERO_ADDRESS");
 
-        core = _core;
-
-        emit CoreSet(address(_core));
+        treasury = _treasury;
+        emit TreasurySet(_treasury);
     }
 
     /**********
@@ -91,21 +102,12 @@ contract PendleData is IPendleData, Permissions {
         external
         override
         initialized
-        onlyCore
+        onlyRouter
     {
         getForgeId[_forgeAddress] = _forgeId;
         getForgeAddress[_forgeId] = _forgeAddress;
 
         emit ForgeAdded(_forgeId, _forgeAddress);
-    }
-
-    function removeForge(bytes32 _forgeId) external override initialized onlyCore {
-        address _forgeAddress = getForgeAddress[_forgeId];
-
-        getForgeAddress[_forgeId] = address(0);
-        getForgeId[_forgeAddress] = _forgeId;
-
-        emit ForgeRemoved(_forgeId, _forgeAddress);
     }
 
     function storeTokens(
@@ -128,28 +130,52 @@ contract PendleData is IPendleData, Permissions {
         xyt = xytTokens[_forgeId][_underlyingAsset][_expiry];
     }
 
-    function isValidXYT(address _xyt) external view override returns (bool) {
-        address forge = IPendleYieldToken(_xyt).forge();
-        return getForgeId[forge] != bytes32(0);
+    function isValidXYT(
+        address _forge,
+        address _underlyingAsset,
+        uint256 _expiry
+    ) external view override returns (bool) {
+        bytes32 forgeId = getForgeId[_forge];
+        return (forgeId != bytes32(0) &&
+            address(xytTokens[forgeId][_underlyingAsset][_expiry]) != address(0));
+    }
+
+    function isValidXYT(
+        bytes32 _forgeId,
+        address _underlyingAsset,
+        uint256 _expiry
+    ) external view override returns (bool) {
+        return address(xytTokens[_forgeId][_underlyingAsset][_expiry]) != address(0);
     }
 
     /***********
      *  MARKET *
      ***********/
-    function addMarketFactory(
-        bytes32 forgeId,
-        bytes32 marketFactoryId,
-        address _marketFactoryAddress
-    ) external override initialized onlyCore {
-        getMarketFactoryAddress[forgeId][marketFactoryId] = _marketFactoryAddress;
+    function addMarketFactory(bytes32 _marketFactoryId, address _marketFactoryAddress)
+        external
+        override
+        initialized
+        onlyRouter
+    {
+        getMarketFactoryId[_marketFactoryAddress] = _marketFactoryId;
+        getMarketFactoryAddress[_marketFactoryId] = _marketFactoryAddress;
     }
 
     function addMarket(
-        bytes32 forgeId,
-        bytes32 marketFactoryId,
+        bytes32 _marketFactoryId,
+        address _xyt,
+        address _token,
         address _market
-    ) external override initialized onlyMarketFactory(forgeId, marketFactoryId) {
+    ) external override initialized onlyMarketFactory(_marketFactoryId) {
         allMarkets.push(_market);
+
+        bytes32 key = _createKey(_xyt, _token, _marketFactoryId);
+        markets[key] = _market;
+
+        getMarket[_marketFactoryId][_xyt][_token] = _market;
+        isMarket[_market] = true;
+
+        emit MarketPairAdded(_market, _xyt, _token);
     }
 
     function setMarketFees(uint256 _swapFee, uint256 _exitFee) external override onlyGovernance {
@@ -157,22 +183,104 @@ contract PendleData is IPendleData, Permissions {
         exitFee = _exitFee;
     }
 
-    function storeMarket(
-        bytes32 _forgeId,
-        bytes32 _marketFactoryId,
+    function updateMarketInfo(
         address _xyt,
         address _token,
-        address _market
-    ) external override initialized onlyMarketFactory(_forgeId, _marketFactoryId) {
-        getMarket[_forgeId][_marketFactoryId][_xyt][_token] = _market;
-        isMarket[_market] = true;
+        address _marketFactory
+    ) public override {
+        bytes32 marketFactoryId = getMarketFactoryId[_marketFactory];
+        _updateMarketInfo(_xyt, _token, marketFactoryId);
+    }
+
+    function updateMarketInfo(
+        address _xyt,
+        address _token,
+        bytes32 _marketFactoryId
+    ) public override {
+        _updateMarketInfo(_xyt, _token, _marketFactoryId);
+    }
+
+    function _updateMarketInfo(
+        address _xyt,
+        address _token,
+        bytes32 _marketFactoryId
+    ) internal {
+        bytes32 key = _createKey(_xyt, _token, _marketFactoryId);
+        address market = markets[key];
+        MarketInfo memory info = marketInfo[key];
+
+        info.xytWeight = uint80(IPendleMarket(market).getWeight(_xyt));
+        info.tokenWeight = uint80(IPendleMarket(market).getWeight(_token));
+        info.liquidity = Math.rdiv(
+            uint256(info.xytWeight),
+            uint256(info.xytWeight).add(uint256(info.tokenWeight))
+        );
+
+        marketInfo[key] = info;
     }
 
     function allMarketsLength() external view override returns (uint256) {
         return allMarkets.length;
     }
 
-    function getAllMarkets() public view override returns (address[] memory) {
+    function getAllMarkets() external view override returns (address[] memory) {
         return allMarkets;
+    }
+
+    function getMarketFromKey(
+        address _tokenIn,
+        address _tokenOut,
+        bytes32 _marketFactoryId
+    ) external view override returns (address market) {
+        bytes32 key = _createKey(_tokenIn, _tokenOut, _marketFactoryId);
+        market = markets[key];
+    }
+
+    function getMarketInfo(
+        address _tokenIn,
+        address _tokenOut,
+        bytes32 _marketFactoryId
+    )
+        external
+        view
+        override
+        returns (
+            uint256 xytWeight,
+            uint256 tokenWeight,
+            uint256 liquidity
+        )
+    {
+        bytes32 key = _createKey(_tokenIn, _tokenOut, _marketFactoryId);
+        MarketInfo memory info = marketInfo[key];
+
+        xytWeight = info.xytWeight;
+        tokenWeight = info.tokenWeight;
+        liquidity = info.liquidity;
+    }
+
+    function getEffectiveLiquidityForMarket(
+        address _tokenIn,
+        address _tokenOut,
+        bytes32 _marketFactoryId
+    ) public view override returns (uint256 effectiveLiquidity) {
+        bytes32 key = _createKey(_tokenIn, _tokenOut, _marketFactoryId);
+        address market = markets[key];
+        MarketInfo memory info = marketInfo[key];
+
+        effectiveLiquidity = Math.rdiv(
+            uint256(info.xytWeight),
+            uint256(info.xytWeight).add(uint256(info.tokenWeight))
+        );
+        effectiveLiquidity = effectiveLiquidity.mul(IPendleMarket(market).getBalance(_tokenOut));
+    }
+
+    function _createKey(
+        address _tokenA,
+        address _tokenB,
+        bytes32 _factoryId
+    ) internal pure returns (bytes32) {
+        (address tokenX, address tokenY) =
+            _tokenA < _tokenB ? (_tokenA, _tokenB) : (_tokenB, _tokenA);
+        return keccak256(abi.encode(tokenX, tokenY, _factoryId));
     }
 }

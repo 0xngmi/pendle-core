@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  */
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IPendleBaseToken.sol";
@@ -72,15 +72,6 @@ abstract contract PendleBaseToken is IPendleBaseToken {
     }
 
     /**
-     * @dev Burns OT or XYT tokens from account, reducting the total supply.
-     * @param account The address performing the burn.
-     * @param amount The amount to be burned.
-     **/
-    function burn(address account, uint256 amount) public override {
-        _burn(account, amount);
-    }
-
-    /**
      * @dev Decreases the allowance granted to spender by the caller.
      * @param spender The address to reduce the allowance from.
      * @param subtractedValue The amount allowance to subtract.
@@ -94,7 +85,7 @@ abstract contract PendleBaseToken is IPendleBaseToken {
         _approve(
             msg.sender,
             spender,
-            allowance[msg.sender][spender].sub(subtractedValue, "Pendle: allowance < 0")
+            allowance[msg.sender][spender].sub(subtractedValue, "NEGATIVE_ALLOWANCE")
         );
         return true;
     }
@@ -112,15 +103,6 @@ abstract contract PendleBaseToken is IPendleBaseToken {
     {
         _approve(msg.sender, spender, allowance[msg.sender][spender].add(addedValue));
         return true;
-    }
-
-    /**
-     * @dev Mints new OT or XYT tokens for account, increasing the total supply.
-     * @param account The address to send the minted tokens.
-     * @param amount The amount to be minted.
-     **/
-    function mint(address account, uint256 amount) public override {
-        _mint(account, amount);
     }
 
     /**
@@ -150,7 +132,7 @@ abstract contract PendleBaseToken is IPendleBaseToken {
         _approve(
             sender,
             msg.sender,
-            allowance[sender][msg.sender].sub(amount, "Pendle: transfer > allowance")
+            allowance[sender][msg.sender].sub(amount, "TRANSFER_EXCEED_ALLOWANCE")
         );
         return true;
     }
@@ -160,15 +142,15 @@ abstract contract PendleBaseToken is IPendleBaseToken {
         address spender,
         uint256 amount
     ) internal virtual {
-        require(owner != address(0), "Pendle: owner zero address");
-        require(spender != address(0), "Pendle: spender zero address");
+        require(owner != address(0), "OWNER_ZERO_ADDR");
+        require(spender != address(0), "SPENDER_ZERO_ADDR");
 
         allowance[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
 
     function _mint(address account, uint256 amount) internal {
-        require(account != address(0), "Pendle: mint to zero address");
+        require(account != address(0), "MINT_TO_ZERO_ADDR");
 
         totalSupply = totalSupply.add(amount);
         balanceOf[account] = balanceOf[account].add(amount);
@@ -176,9 +158,9 @@ abstract contract PendleBaseToken is IPendleBaseToken {
     }
 
     function _burn(address account, uint256 amount) internal {
-        require(account != address(0), "Pendle: burn to zero address");
+        require(account != address(0), "BURN_TO_ZERO_ADDR");
 
-        balanceOf[account] = balanceOf[account].sub(amount, "Pendle: burn > balance");
+        balanceOf[account] = balanceOf[account].sub(amount, "BURN_EXCEED_BALANCE");
         totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -188,12 +170,12 @@ abstract contract PendleBaseToken is IPendleBaseToken {
         address receiver,
         uint256 amount
     ) internal {
-        require(sender != address(0), "Pendle: sender zero address");
-        require(receiver != address(0), "Pendle: receiver zero address");
+        require(sender != address(0), "SENDER_ZERO_ADDR");
+        require(receiver != address(0), "RECEIVER_ZERO_ADDR");
 
         _beforeTokenTransfer(sender, receiver);
 
-        balanceOf[sender] = balanceOf[sender].sub(amount, "Pendle: transfer > balance");
+        balanceOf[sender] = balanceOf[sender].sub(amount, "TRANSFER_EXCEED_BALANCE");
         balanceOf[receiver] = balanceOf[receiver].add(amount);
         emit Transfer(sender, receiver, amount);
     }

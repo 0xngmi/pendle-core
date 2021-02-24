@@ -1,9 +1,8 @@
-import { expect, assert } from "chai";
-import { Contract } from "ethers";
+import { expect } from "chai";
 import { createFixtureLoader } from "ethereum-waffle";
-
-import { pendleCoreFixture } from "./fixtures";
-import { evm_revert, evm_snapshot } from "../helpers";
+import { Contract } from "ethers";
+import { consts, evm_revert, evm_snapshot, Token, tokens } from "../helpers";
+import { pendleMarketFixture } from "./fixtures";
 
 const { waffle } = require("hardhat");
 const provider = waffle.provider;
@@ -12,18 +11,25 @@ describe("PendleData", async () => {
   const wallets = provider.getWallets();
   const loadFixture = createFixtureLoader(wallets, provider);
 
-  let pendle: Contract;
+  let pendleRouter: Contract;
+  let pendleMarketFactory: Contract;
   let pendleData: Contract;
+  let pendleTreasury: Contract;
+  let pendleXyt: Contract;
+  let tokenUSDT: Token;
   let snapshotId: string;
   let globalSnapshotId: string;
 
   before(async () => {
     globalSnapshotId = await evm_snapshot();
 
-    const fixture = await loadFixture(pendleCoreFixture);
-    pendle = fixture.pendle;
-    pendleData = fixture.pendleData;
-
+    const fixture = await loadFixture(pendleMarketFixture);
+    pendleRouter = fixture.core.pendleRouter;
+    pendleTreasury = fixture.core.pendleTreasury;
+    pendleData = fixture.core.pendleData;
+    pendleMarketFactory = fixture.core.pendleMarketFactory;
+    pendleXyt = fixture.forge.pendleFutureYieldToken;
+    tokenUSDT = tokens.USDT;
     snapshotId = await evm_snapshot();
   });
 
@@ -46,17 +52,29 @@ describe("PendleData", async () => {
 
   it("allMarketsLength", async () => {
     let allMarketsLength = await pendleData.allMarketsLength();
-    expect(allMarketsLength).to.be.eq(0);
+    expect(allMarketsLength).to.be.eq(1);
   });
 
   it("getAllMarkets", async () => {
-    let getAllMarkets = await pendleData.getAllMarkets();
-    assert(Array.isArray(getAllMarkets));
+    let filter = pendleMarketFactory.filters.MarketCreated();
+    let tx = await pendleRouter.createMarket(
+      consts.MARKET_FACTORY_AAVE,
+      pendleXyt.address,
+      tokenUSDT.address,
+      consts.HIGH_GAS_OVERRIDE
+    );
+    let allEvents = await pendleMarketFactory.queryFilter(filter, tx.blockHash);
+    let expectedMarkets: string[] = [];
+    allEvents.forEach((event) => {
+      expectedMarkets.push(event.args!.market);
+    });
+    let allMarkets = await pendleData.getAllMarkets();
+    expect(allMarkets).to.have.members(expectedMarkets);
   });
 
-  it("should be able to setCore", async () => {
-    await expect(pendleData.setCore(pendle.address))
-      .to.emit(pendleData, "CoreSet")
-      .withArgs(pendle.address);
+  it("Should be able to setTreasury", async () => {
+    await expect(pendleData.setTreasury(pendleTreasury.address))
+      .to.emit(pendleData, "TreasurySet")
+      .withArgs(pendleTreasury.address);
   });
 });

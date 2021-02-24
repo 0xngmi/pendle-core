@@ -1,3 +1,4 @@
+/* solhint-disable  const-name-snakecase*/
 // SPDX-License-Identifier: MIT
 /*
  * MIT License
@@ -20,12 +21,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  */
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "../interfaces/IPDL.sol";
+import "../interfaces/IPENDLE.sol";
 
-contract PDL is IPDL {
+contract PENDLE is IPENDLE {
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
@@ -99,7 +100,7 @@ contract PDL is IPDL {
         if (rawAmount == uint256(-1)) {
             amount = uint96(-1);
         } else {
-            amount = safe96(rawAmount, "Pendle: amount exceeds 96 bits");
+            amount = safe96(rawAmount, "AMOUNT_EXCEED_96_BITS");
         }
 
         allowances[msg.sender][spender] = amount;
@@ -115,7 +116,7 @@ contract PDL is IPDL {
      * @return Whether or not the transfer succeeded
      */
     function transfer(address dst, uint256 rawAmount) external returns (bool) {
-        uint96 amount = safe96(rawAmount, "Pendle::transfer: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "AMOUNT_EXCEED_96_BITS");
         _transferTokens(msg.sender, dst, amount);
         return true;
     }
@@ -134,15 +135,10 @@ contract PDL is IPDL {
     ) external returns (bool) {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "Pendle::approve: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "AMOUNT_EXCEED_96_BITS");
 
         if (spender != src && spenderAllowance != uint96(-1)) {
-            uint96 newAllowance =
-                sub96(
-                    spenderAllowance,
-                    amount,
-                    "Pendle::transferFrom: transfer amount exceeds spender allowance"
-                );
+            uint96 newAllowance = sub96(spenderAllowance, amount, "TRANSFER_EXCEED_BALANCE");
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
@@ -213,15 +209,16 @@ contract PDL is IPDL {
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "Pendle: invalid signature");
-        require(nonce == nonces[signatory]++, "Pendle: invalid nonce");
-        require(block.timestamp <= expiry, "Pendle: signature expired");
+        require(signatory != address(0), "INVALID_SIGNATURE");
+        require(nonce == nonces[signatory]++, "INVALID_NONCE");
+        require(block.timestamp <= expiry, "SIGNATURE_EXPIRED");
         return _delegate(signatory, delegatee);
     }
 
     /**
      * @notice Determine the prior number of votes for an account as of a block number
-     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
+     * @dev Block number must be a finalized block or else
+                this function will revert to prevent misinformation
      * @param account The address of the account to check
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
@@ -232,7 +229,7 @@ contract PDL is IPDL {
         override
         returns (uint96)
     {
-        require(blockNumber < block.number, "Pendle: not yet determined");
+        require(blockNumber < block.number, "NOT_YET_DETERMINED");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -280,11 +277,11 @@ contract PDL is IPDL {
         address dst,
         uint96 amount
     ) internal {
-        require(src != address(0), "Pendle: cannot transfer from the zero address");
-        require(dst != address(0), "Pendle: cannot transfer to the zero address");
+        require(src != address(0), "SENDER_ZERO_ADDR");
+        require(dst != address(0), "RECEIVER_ZERO_ADDR");
 
-        balances[src] = sub96(balances[src], amount, "Pendle: transfer amount exceeds balance");
-        balances[dst] = add96(balances[dst], amount, "Pendle: transfer amount overflows");
+        balances[src] = sub96(balances[src], amount, "TRANSFER_EXCEED_BALANCE");
+        balances[dst] = add96(balances[dst], amount, "TRANSFER_AMOUNT_OVERFLOW");
         emit Transfer(src, dst, amount);
 
         _moveDelegates(delegates[src], delegates[dst], amount);
@@ -299,14 +296,14 @@ contract PDL is IPDL {
             if (srcRep != address(0)) {
                 uint32 srcRepNum = numCheckpoints[srcRep];
                 uint96 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint96 srcRepNew = sub96(srcRepOld, amount, "Pendle: vote amount underflows");
+                uint96 srcRepNew = sub96(srcRepOld, amount, "VOTE_AMOUNT_UNDERFLOW");
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
                 uint32 dstRepNum = numCheckpoints[dstRep];
                 uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint96 dstRepNew = add96(dstRepOld, amount, "Pendle: vote amount overflows");
+                uint96 dstRepNew = add96(dstRepOld, amount, "VOTE_AMOUNT_OVERFLOW");
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
@@ -318,7 +315,7 @@ contract PDL is IPDL {
         uint96 oldVotes,
         uint96 newVotes
     ) internal {
-        uint32 blockNumber = safe32(block.number, "Pendle: block number exceeds 32 bits");
+        uint32 blockNumber = safe32(block.number, "BLOCK_NUM_EXCEED_32_BITS");
 
         if (
             nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber

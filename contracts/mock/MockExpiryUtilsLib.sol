@@ -20,15 +20,19 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  */
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 
-import "../core/Pendle.sol";
+import "../libraries/ExpiryUtilsLib.sol";
 
-contract MockPendle is Pendle {
-    constructor()
-        Pendle(
-            0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa,
-            0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB
-        )
-    {}
+contract MockExpiryUtilsLib {
+    using ExpiryUtils for string;
+
+    function concat(
+        string memory _bt,
+        string memory _yt,
+        uint256 _expiry,
+        string memory _delimiter
+    ) public pure returns (string memory result) {
+        result = _bt.concat(_yt, _expiry, _delimiter);
+    }
 }
