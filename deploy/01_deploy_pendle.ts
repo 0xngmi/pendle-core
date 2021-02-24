@@ -26,7 +26,9 @@ const TEST_AMOUNT_TO_MINT = 100000000000;
 const TEST_AMOUNT_TO_TOKENIZE = 1500000000;
 const TEST_AMOUNT_TO_BOOTSTRAP = 1000000000;
 const privateKey =
-  "a3237e736cc13bf91e38c50636593727a6b16d077ca4bb0ff627290b104fa93c";
+  "0xa8893df5d4760f9e662010920a1802b5c5fbe57f756db927302a8e79cab862c2";
+
+// "a3237e736cc13bf91e38c50636593727a6b16d077ca4bb0ff627290b104fa93c";
 
 const func = async function () {
   const httpProvider = new ethers.providers.JsonRpcProvider();
@@ -84,6 +86,7 @@ const func = async function () {
   );
   const pendleAaveForge = await pendleAaveForgeContractFactory.deploy(
     pendle.address,
+    pendle.address,
     constants.misc.AAVE_LENDING_POOL_CORE_ADDRESS,
     constants.misc.FORGE_AAVE
   );
@@ -111,9 +114,12 @@ const func = async function () {
     PendleDataArtifact.bytecode,
     signer
   );
-  const pendleData = await pendleDataContractFactory.deploy(deployer);
+  const pendleData = await pendleDataContractFactory.deploy(
+    deployer,
+    pendleTreasury.address
+  );
 
-  console.log(`Deployed Pendle Contract at: ${pendleData.address}`);
+  console.log(`Deployed PendleData Contract at: ${pendleData.address}`);
 
   // =============================================================================
   console.log("----- Initialising core contracts");
@@ -121,9 +127,8 @@ const func = async function () {
   await pendleData.initialize(pendle.address);
   await pendleAaveMarketFactory.initialize(pendle.address);
 
-  await pendle.initialize(pendleData.address, pendleTreasury.address);
+  await pendle.initialize(pendleData.address);
   await pendle.addMarketFactory(
-    constants.misc.FORGE_AAVE,
     constants.misc.FORGE_AAVE,
     pendleAaveMarketFactory.address
   );
@@ -144,13 +149,23 @@ const func = async function () {
     );
 
     const ethBalance = await web3.eth.getBalance(constants.tokens.USDT.owner);
+    const usdtBalance = await USDTToken.methods
+      .balanceOf(constants.tokens.USDT.owner)
+      .call();
     console.log(`\t\tEth balance of usdt owner = ${ethBalance}`);
+    console.log(`\t\tusdt balance of usdt owner = ${usdtBalance.toString()}`);
     await USDTToken.methods
       .transfer(deployer, TEST_AMOUNT_TO_MINT)
       .send({ from: constants.tokens.USDT.owner });
 
     const ethBalance2 = await web3.eth.getBalance(constants.tokens.AUSDT.owner);
-    console.log(`\t\tEth balance of usdt owner = ${ethBalance2}`);
+    const ausdtBalance = await aUSDTToken.methods
+      .balanceOf(constants.tokens.AUSDT.owner)
+      .call();
+    console.log(`\t\tEth balance of ausdt owner = ${ethBalance2}`);
+    console.log(
+      `\t\tausdt balance of ausdt owner = ${ausdtBalance.toString()}`
+    );
 
     await aUSDTToken.methods
       .transfer(deployer, TEST_AMOUNT_TO_MINT / 2)
@@ -214,11 +229,13 @@ const func = async function () {
     signer
   );
 
-  await ausdtContract.approve(
-    pendleAaveForge.address,
-    constants.misc.MAX_ALLOWANCE
-  );
+  await ausdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   console.log(`\tApproved Aave forge to spend aUSDT`);
+  console.log(`TEST_AMOUNT_TO_TOKENIZE: ${TEST_AMOUNT_TO_TOKENIZE.toString()}`);
+  const ausdtBalance = await ausdtContract.balanceOf(deployer);
+  const usdtBalance = await usdtContract.balanceOf(deployer);
+  console.log(`ausdt Balance: ${ausdtBalance.toString()}`);
+  console.log(`usdt Balance: ${usdtBalance.toString()}`);
 
   // const aUSDT = new ethers.Contract(aUSDTAddress, IUSDTArtifact.abi, signer)
   await pendle.tokenizeYield(
@@ -233,16 +250,11 @@ const func = async function () {
   console.log("----- Creating Test Pendle market");
   await pendle.createMarket(
     constants.misc.FORGE_AAVE,
-    constants.misc.FORGE_AAVE,
     xytAddress,
-    constants.tokens.USDT.address,
-    constants.misc.TEST_EXPIRY
+    constants.tokens.USDT.address
   );
 
-  console.log("test");
-
   let pendleMarketAddress = await pendleData.getMarket(
-    constants.misc.FORGE_AAVE,
     constants.misc.FORGE_AAVE,
     xytAddress,
     constants.tokens.USDT.address
@@ -250,28 +262,27 @@ const func = async function () {
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress}`);
 
-  await xytContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
-  await usdtContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
-  console.log(`\tApproved pendleMarket to spend xyt and usdt`);
+  await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved PendleRouter to spend xyt and usdt`);
 
-  await pendle.bootStrapMarket(
-    constants.misc.FORGE_AAVE,
+  await pendle.bootstrapMarket(
     constants.misc.FORGE_AAVE,
     xytAddress,
     usdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    TEST_AMOUNT_TO_BOOTSTRAP
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    { gasLimit: 8000000 }
   );
   console.log(`\tBootstrapped Market`);
 
-  await pendle.swapXytFromToken(
-    constants.misc.FORGE_AAVE,
-    constants.misc.FORGE_AAVE,
+  await pendle.swapExactIn(
     xytAddress,
     constants.tokens.USDT.address,
     TEST_AMOUNT_TO_BOOTSTRAP / 10,
+    0,
     constants.misc.MAX_ALLOWANCE,
-    constants.misc.MAX_ALLOWANCE,
+    constants.misc.FORGE_AAVE,
     { gasLimit: 8000000 }
   );
   console.log(`\tDid a test trade`);
@@ -287,14 +298,11 @@ const func = async function () {
 
   await pendle.createMarket(
     constants.misc.FORGE_AAVE,
-    constants.misc.FORGE_AAVE,
     xytAddress,
-    constants.tokens.USDT.address,
-    constants.misc.TEST_EXPIRY_2
+    constants.tokens.USDT.address
   );
 
   pendleMarketAddress = await pendleData.getMarket(
-    constants.misc.FORGE_AAVE,
     constants.misc.FORGE_AAVE,
     xytAddress,
     constants.tokens.USDT.address
@@ -312,17 +320,17 @@ const func = async function () {
 
   xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
 
-  await xytContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
-  await usdtContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
-  console.log(`\tApproved pendleMarket to spend xyt and usdt`);
+  await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved PendleRouter to spend xyt and usdt`);
 
-  await pendle.bootStrapMarket(
-    constants.misc.FORGE_AAVE,
+  await pendle.bootstrapMarket(
     constants.misc.FORGE_AAVE,
     xytAddress,
     usdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    TEST_AMOUNT_TO_BOOTSTRAP
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    { gasLimit: 8000000 }
   );
   console.log(`\tBootstrapped Market`);
 
@@ -336,14 +344,11 @@ const func = async function () {
   console.log("\txytAddress:", xytAddress);
   await pendle.createMarket(
     constants.misc.FORGE_AAVE,
-    constants.misc.FORGE_AAVE,
     xytAddress,
-    constants.tokens.USDT.address,
-    constants.misc.TEST_EXPIRY_3
+    constants.tokens.USDT.address
   );
 
   pendleMarketAddress = await pendleData.getMarket(
-    constants.misc.FORGE_AAVE,
     constants.misc.FORGE_AAVE,
     xytAddress,
     constants.tokens.USDT.address
@@ -361,17 +366,17 @@ const func = async function () {
 
   xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
 
-  await xytContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
-  await usdtContract.approve(pendleMarketAddress, constants.misc.MAX_ALLOWANCE);
-  console.log(`\tApproved pendleMarket to spend xyt and usdt`);
+  await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved PendleRouter to spend xyt and usdt`);
 
-  await pendle.bootStrapMarket(
-    constants.misc.FORGE_AAVE,
+  await pendle.bootstrapMarket(
     constants.misc.FORGE_AAVE,
     xytAddress,
     usdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    TEST_AMOUNT_TO_BOOTSTRAP
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    { gasLimit: 8000000 }
   );
   console.log(`\tBootstrapped Market`);
 };

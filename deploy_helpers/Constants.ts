@@ -28,7 +28,9 @@ module.exports.devConstants = {
       .sub(BigNumber.from(1)),
     ONE_DAY: BigNumber.from(86400),
     ONE_MOUNTH: BigNumber.from(2592000),
-    TEST_EXPIRY: BigNumber.from(Math.round(Date.now() / 1000)).add(2592000 * 6),
+    TEST_EXPIRY: 1624462704,
+    TEST_EXPIRY_2: 1614064970,
+    TEST_EXPIRY_3: 1619162570,
     ONE_YEAR: BigNumber.from(31536000),
   },
   tokens: {
@@ -48,7 +50,7 @@ module.exports.devConstants = {
     AUSDT: {
       address: "0x71fc860F7D3A592A4a98740e39dB31d25db65ae8",
       decimal: 6,
-      owner: "0x81dfbbaF5011e3b86383f72A24793EE44ea547C5",
+      owner: "0x53f470a909d7ce7f35e62f4470fd440b1ed5d8cd",
     },
   },
 };
@@ -66,7 +68,9 @@ module.exports.kovanConstants = {
       .sub(BigNumber.from(1)),
     ONE_DAY: BigNumber.from(86400),
     ONE_MOUNTH: BigNumber.from(2592000),
-    TEST_EXPIRY: BigNumber.from(Math.round(Date.now() / 1000)).add(2592000 * 6),
+    TEST_EXPIRY: 1624462704,
+    TEST_EXPIRY_2: 1614064970,
+    TEST_EXPIRY_3: 1619162570,
     ONE_YEAR: BigNumber.from(31536000),
   },
   tokens: {
