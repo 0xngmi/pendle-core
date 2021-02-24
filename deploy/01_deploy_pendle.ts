@@ -26,7 +26,7 @@ const TEST_AMOUNT_TO_MINT = 100000000000;
 const TEST_AMOUNT_TO_TOKENIZE = 1500000000;
 const TEST_AMOUNT_TO_BOOTSTRAP = 1000000000;
 const privateKey =
-  "0xa8893df5d4760f9e662010920a1802b5c5fbe57f756db927302a8e79cab862c2";
+  "0xabf4301550779469756fc83eb5579e677823074c4a55c3b4b5893048a192b509";
 
 // "a3237e736cc13bf91e38c50636593727a6b16d077ca4bb0ff627290b104fa93c";
 
@@ -231,11 +231,6 @@ const func = async function () {
 
   await ausdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   console.log(`\tApproved Aave forge to spend aUSDT`);
-  console.log(`TEST_AMOUNT_TO_TOKENIZE: ${TEST_AMOUNT_TO_TOKENIZE.toString()}`);
-  const ausdtBalance = await ausdtContract.balanceOf(deployer);
-  const usdtBalance = await usdtContract.balanceOf(deployer);
-  console.log(`ausdt Balance: ${ausdtBalance.toString()}`);
-  console.log(`usdt Balance: ${usdtBalance.toString()}`);
 
   // const aUSDT = new ethers.Contract(aUSDTAddress, IUSDTArtifact.abi, signer)
   await pendle.tokenizeYield(
@@ -321,15 +316,20 @@ const func = async function () {
   xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
 
   await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
-  await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
-  console.log(`\tApproved PendleRouter to spend xyt and usdt`);
+  // await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved PendleRouter to spend xyt`);
+  console.log(`TEST_AMOUNT_TO_BOOTSTRAP: ${TEST_AMOUNT_TO_BOOTSTRAP.toString()}`);
+  const xytBalance = await xytContract.balanceOf(deployer);
+  const usdtBalance = await usdtContract.balanceOf(deployer);
+  console.log(`ausdt Balance: ${xytBalance.toString()}`);
+  console.log(`usdt Balance: ${usdtBalance.toString()}`);
 
   await pendle.bootstrapMarket(
     constants.misc.FORGE_AAVE,
     xytAddress,
     usdtContract.address,
-    TEST_AMOUNT_TO_BOOTSTRAP,
-    TEST_AMOUNT_TO_BOOTSTRAP,
+    TEST_AMOUNT_TO_BOOTSTRAP / 10,
+    TEST_AMOUNT_TO_BOOTSTRAP / 10,
     { gasLimit: 8000000 }
   );
   console.log(`\tBootstrapped Market`);
@@ -367,7 +367,7 @@ const func = async function () {
   xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
 
   await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
-  await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  // await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   console.log(`\tApproved PendleRouter to spend xyt and usdt`);
 
   await pendle.bootstrapMarket(
