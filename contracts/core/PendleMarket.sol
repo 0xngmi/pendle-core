@@ -170,13 +170,11 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
         reserves[token].balance = reserves[token].balance.add(amountTokenUsed);
         _transferIn(token, amountTokenUsed);
 
-        // Calc out amount of LP token.
-        exactOutLp = _calcOutAmountLp(
-            _exactIn,
-            inTokenReserve,
-            data.swapFee(),
-            totalLp,
-            totalWeight
+        emit Sync(
+            reserves[xyt].balance,
+            reserves[xyt].weight,
+            reserves[token].balance,
+            reserves[token].weight
         );
 
         // Mint and push LP token.
@@ -328,7 +326,12 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
         require(spotPriceAfter <= maxPrice, "LOW_MAX_PRICE");
         require(spotPriceBefore <= Math.rdiv(inAmount, outAmount), "MATH_ERROR");
 
-        spotPriceAfter = _calcSpotPrice(inTokenReserve, outTokenReserve, data.swapFee());
+        emit Sync(
+            reserves[xyt].balance,
+            reserves[xyt].weight,
+            reserves[token].balance,
+            reserves[token].weight
+        );
 
         _transferIn(inToken, inAmount);
         _transferOut(outToken, outAmount);
@@ -371,9 +374,12 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
         require(spotPriceAfter <= maxPrice, "LOW_MAX_PRICE");
         require(spotPriceBefore <= Math.rdiv(inAmount, outAmount), "MATH_ERROR");
 
-        require(spotPriceAfter >= spotPriceBefore, "MATH_ERROR");
-        require(spotPriceAfter <= maxPrice, "LOW_MAX_PRICE");
-        require(spotPriceBefore <= Math.rdiv(inAmount, outAmount), "MATH_ERROR");
+        emit Sync(
+            reserves[xyt].balance,
+            reserves[xyt].weight,
+            reserves[token].balance,
+            reserves[token].weight
+        );
 
         _transferIn(inToken, inAmount);
         _transferOut(outToken, outAmount);
