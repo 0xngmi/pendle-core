@@ -61,6 +61,8 @@ export async function pendleMarketFixture(
     pendleMarketFactory.address
   );
 
+  await pendleData.setForgeFactoryValidity(consts.FORGE_AAVE, consts.MARKET_FACTORY_AAVE, true);
+
   await pendleRouter.createMarket(
     consts.MARKET_FACTORY_AAVE,
     pendleFutureYieldToken.address,
@@ -79,6 +81,8 @@ export async function pendleMarketFixture(
     pendleFutureYieldToken.address,
     tokens.WETH.address,
   );
+
+  await pendleData.setReentrancyWhitelist([pendleStdMarketAddress, pendleEthMarketAddress], [true, true]);
 
   const pendleStdMarket = new Contract(pendleStdMarketAddress, PendleMarket.abi, alice)
   const pendleEthMarket = new Contract(pendleEthMarketAddress, PendleMarket.abi, alice)
