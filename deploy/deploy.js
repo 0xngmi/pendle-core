@@ -284,6 +284,50 @@ async function main() {
   );
   console.log(`Bootstrapped Market`);
 
+  console.log("\n========== Creating Test Pendle Market 3");
+  xytAddress = await pendleData.xytTokens(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3
+  );
+  console.log("\txytAddress:", xytAddress);
+  await pendleRouter.createMarket(
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    constants.tokens.USDT.address
+  );
+
+  pendleMarketAddress = await pendleData.getMarket(
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    constants.tokens.USDT.address
+  );
+
+  console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress}`);
+
+  await pendleRouter.tokenizeYield(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3,
+    TEST_AMOUNT_TO_TOKENIZE,
+    alice.address
+  );
+
+  xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, alice);
+
+  await xytContract.approve(pendleRouter.address, constants.misc.MAX_ALLOWANCE);
+  // await usdtContract.approve(pendleRouter.address, constants.misc.MAX_ALLOWANCE);
+  console.log(`\tApproved PendleRouter to spend xyt and usdt`);
+
+  await pendleRouter.bootstrapMarket(
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    usdtContract.address,
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    { gasLimit: 8000000 }
+  );
+  console.log(`\tBootstrapped Market`);
 }
 
 main()

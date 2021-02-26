@@ -27,9 +27,9 @@ module.exports.devConstants = {
       .pow(BigNumber.from(256))
       .sub(BigNumber.from(1)),
     ONE_DAY: BigNumber.from(86400),
-    ONE_MOUNTH: BigNumber.from(2592000),
+    ONE_MONTH: BigNumber.from(2592000),
     TEST_EXPIRY: 1624462704,
-    TEST_EXPIRY_2: 1614064970,
+    TEST_EXPIRY_2: 1616656970,
     TEST_EXPIRY_3: 1619162570,
     ONE_YEAR: BigNumber.from(31536000),
   },
@@ -67,7 +67,7 @@ module.exports.kovanConstants = {
       .pow(BigNumber.from(256))
       .sub(BigNumber.from(1)),
     ONE_DAY: BigNumber.from(86400),
-    ONE_MOUNTH: BigNumber.from(2592000),
+    ONE_MONTH: BigNumber.from(2592000),
     TEST_EXPIRY: 1624462704,
     TEST_EXPIRY_2: 1614064970,
     TEST_EXPIRY_3: 1619162570,
