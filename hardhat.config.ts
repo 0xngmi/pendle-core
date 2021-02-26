@@ -75,12 +75,12 @@ const config: HardhatUserConfig = {
       // gas: 12400000,
       // timeout: 1000000,
     },
-    // kovan: {
-    //   url: `https://kovan.infura.io/v3/${process.env.INFURA_KEY}`,
-    //   gas: 8000000,
-    //   timeout: 100000,
-    //   accounts: [`${process.env.PRIVATE_KEYS}`],
-    // },
+    kovan: {
+      url: `https://kovan.infura.io/v3/${process.env.INFURA_KEY}`,
+      gas: 8000000,
+      timeout: 100000,
+      accounts: [`${process.env.PRIVATE_KEYS}`],
+    },
   },
   solidity: {
     compilers: [
