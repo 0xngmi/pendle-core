@@ -11,14 +11,14 @@ import "hardhat-typechain";
 import "solidity-coverage";
 
 const config: HardhatUserConfig = {
-  defaultNetwork: 'hardhat',
+  defaultNetwork: "hardhat",
   gasReporter: {
-    currency: 'USD',
-    gasPrice: 100
+    currency: "USD",
+    gasPrice: 100,
   },
   paths: {
-    sources: './contracts',
-    tests: './test',
+    sources: "./contracts",
+    tests: "./test",
     artifacts: "./build/artifacts",
     cache: "./build/cache",
   },
@@ -28,7 +28,7 @@ const config: HardhatUserConfig = {
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
         // url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
         // url: 'http://localhost:8545',
-        blockNumber: 11732924
+        blockNumber: 11732924,
       },
       accounts: [
         // 5 accounts with 10^14 ETH each
@@ -67,13 +67,13 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       blockGasLimit: 40000000,
       gas: 40000000,
-      gasPrice: 'auto',
+      gasPrice: "auto",
       loggingEnabled: false,
     },
     development: {
       url: "http://127.0.0.1:8545",
-      gas: 12400000,
-      timeout: 1000000,
+      // gas: 12400000,
+      // timeout: 1000000,
     },
     // kovan: {
     //   url: `https://kovan.infura.io/v3/${process.env.INFURA_KEY}`,
@@ -85,7 +85,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.7.6',
+        version: "0.7.6",
         settings: {
           optimizer: {
             enabled: true,
@@ -97,7 +97,7 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 500000,
-  }
+  },
 };
 
 export default config;

@@ -1,5 +1,5 @@
 usdt_owner="0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828"
-ausdt_owner="0x53f470a909d7ce7f35e62f4470fd440b1ed5d8cd"
+ausdt_owner="0x4188a7dca2757ebc7d9a5bd39134a15b9f3c6402"
 some_other_address="0x000DE7C39eB2f0F0095F41570af89eFC2C1Ea000"
 addresses=$usdt_owner
 INFURA_KEY="3957a20fa69440ffbcc33e24ea4f35ec"

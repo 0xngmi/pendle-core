@@ -50,7 +50,7 @@ module.exports.devConstants = {
     AUSDT: {
       address: "0x71fc860F7D3A592A4a98740e39dB31d25db65ae8",
       decimal: 6,
-      owner: "0x53f470a909d7ce7f35e62f4470fd440b1ed5d8cd",
+      owner: "0x4188a7dca2757ebc7d9a5bd39134a15b9f3c6402",
     },
   },
 };

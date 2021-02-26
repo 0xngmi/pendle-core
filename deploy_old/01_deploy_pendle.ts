@@ -26,7 +26,7 @@ const TEST_AMOUNT_TO_MINT = 100000000000;
 const TEST_AMOUNT_TO_TOKENIZE = 1500000000;
 const TEST_AMOUNT_TO_BOOTSTRAP = 1000000000;
 const privateKey =
-  "0xabf4301550779469756fc83eb5579e677823074c4a55c3b4b5893048a192b509";
+  "0xfca4ee6f3b13b8378f1e4279031db9b4ba992e9702586dc555b51234c1349071";
 
 // "a3237e736cc13bf91e38c50636593727a6b16d077ca4bb0ff627290b104fa93c";
 
@@ -131,6 +131,11 @@ const func = async function () {
   await pendle.addMarketFactory(
     constants.misc.FORGE_AAVE,
     pendleAaveMarketFactory.address
+  );
+  await pendleData.setForgeFactoryValidity(
+    constants.misc.FORGE_AAVE,
+    constants.misc.FORGE_AAVE,
+    true
   );
   // =============================================================================
   console.log("----- Adding Aave Forge");
@@ -318,18 +323,25 @@ const func = async function () {
   await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   // await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   console.log(`\tApproved PendleRouter to spend xyt`);
-  console.log(`TEST_AMOUNT_TO_BOOTSTRAP: ${TEST_AMOUNT_TO_BOOTSTRAP.toString()}`);
+  console.log(
+    `TEST_AMOUNT_TO_BOOTSTRAP: ${TEST_AMOUNT_TO_BOOTSTRAP.toString()}`
+  );
   const xytBalance = await xytContract.balanceOf(deployer);
   const usdtBalance = await usdtContract.balanceOf(deployer);
   console.log(`ausdt Balance: ${xytBalance.toString()}`);
   console.log(`usdt Balance: ${usdtBalance.toString()}`);
 
+  const xytAllowance = await xytContract.allowance(deployer, pendle.address);
+  const usdtAllowance = await usdtContract.allowance(deployer, pendle.address);
+  console.log(`xytAllowance: ${xytAllowance.toString()}`);
+  console.log(`usdtAllowance: ${usdtAllowance.toString()}`);
+
   await pendle.bootstrapMarket(
     constants.misc.FORGE_AAVE,
     xytAddress,
     usdtContract.address,
-    TEST_AMOUNT_TO_BOOTSTRAP / 10,
-    TEST_AMOUNT_TO_BOOTSTRAP / 10,
+    TEST_AMOUNT_TO_BOOTSTRAP,
+    TEST_AMOUNT_TO_BOOTSTRAP,
     { gasLimit: 8000000 }
   );
   console.log(`\tBootstrapped Market`);
