@@ -32,7 +32,6 @@ import "../interfaces/IPendleForge.sol";
 import "../interfaces/IPendleMarketFactory.sol";
 import "../interfaces/IPendleMarket.sol";
 import "../periphery/Permissions.sol";
-import "hardhat/console.sol";
 import "../periphery/Withdrawable.sol";
 
 contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
@@ -57,7 +56,6 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
     }
 
     constructor(address _governance, IWETH _weth) Permissions(_governance) {
-        console.log("governance: %s", _governance);
         weth = _weth;
         _reentrancyStatus = _NOT_ENTERED;
     }
@@ -403,7 +401,6 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         uint256 _initialXytLiquidity,
         uint256 _initialTokenLiquidity
     ) public payable override pendleNonReentrant {
-        console.log("Start Bootstrap");
         require(_initialXytLiquidity > 0, "INVALID_XYT_AMOUNT");
         require(_initialTokenLiquidity > 0, "INVALID_TOKEN_AMOUNT");
 
@@ -412,15 +409,10 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
 
         IPendleMarket market = IPendleMarket(data.getMarket(_marketFactoryId, _xyt, _token));
         require(address(market) != address(0), "MARKET_NOT_FOUND");
-        console.log("XYT balanceOf: %s", IERC20(_xyt).balanceOf(msg.sender));
-        console.log("Transferring XYT: %s", _initialXytLiquidity);
         _transferIn(_xyt, _initialXytLiquidity);
-        console.log("Transferring Token: %s", _initialTokenLiquidity);
         _transferIn(originalToken, _initialTokenLiquidity);
-        console.log("Transfer Completed");
 
         uint256 lpAmount = market.bootstrap(_initialXytLiquidity, _initialTokenLiquidity);
-        console.log("lpAmount: %s", lpAmount);
         emit Join(msg.sender, _initialXytLiquidity, _initialTokenLiquidity, address(market));
         _transferOut(address(market), lpAmount);
 

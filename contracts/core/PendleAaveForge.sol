@@ -32,7 +32,6 @@ import "../interfaces/IPendleForge.sol";
 import "../tokens/PendleFutureYieldToken.sol";
 import "../tokens/PendleOwnershipToken.sol";
 import "../periphery/Permissions.sol";
-import "hardhat/console.sol";
 
 contract PendleAaveForge is IPendleForge, Permissions {
     using ExpiryUtils for string;
@@ -271,7 +270,6 @@ contract PendleAaveForge is IPendleForge, Permissions {
         uint256 _expiry,
         address _account
     ) internal returns (uint256) {
-        console.log("INSIDE _settleDueInterests");
         uint256 principal = _tokens.xyt.balanceOf(_account);
         uint256 ix = lastNormalisedIncome[_underlyingAsset][_expiry][_account];
         uint256 normalizedIncome;
@@ -288,11 +286,6 @@ contract PendleAaveForge is IPendleForge, Permissions {
             return 0;
         }
         lastNormalisedIncome[_underlyingAsset][_expiry][_account] = normalizedIncome;
-        console.log("normalizedIncome: %s", normalizedIncome);
-        console.log("ix: %s", ix);
-        console.log("principal: %s", principal);
-        console.log("principal.mul(normalizedIncome): %s", principal.mul(normalizedIncome));
-        console.log("principal.mul(normalizedIncome).div(ix): %s", principal.mul(normalizedIncome).div(ix));
 
         uint256 dueInterests = principal.mul(normalizedIncome).div(ix).sub(principal);
 

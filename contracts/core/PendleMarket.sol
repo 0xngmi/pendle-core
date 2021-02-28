@@ -30,7 +30,6 @@ import "../interfaces/IPendleMarketFactory.sol";
 import "../interfaces/IPendleYieldToken.sol";
 import "../tokens/PendleBaseToken.sol";
 import "../libraries/MathLib.sol";
-import "../libraries/MathLib.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 contract PendleMarket is IPendleMarket, PendleBaseToken {
