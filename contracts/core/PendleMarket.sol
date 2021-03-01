@@ -31,6 +31,7 @@ import "../interfaces/IPendleYieldToken.sol";
 import "../tokens/PendleBaseToken.sol";
 import "../libraries/MathLib.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "hardhat/console.sol";
 
 contract PendleMarket is IPendleMarket, PendleBaseToken {
     using Math for uint256;
@@ -117,16 +118,20 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
         onlyRouter
         returns (uint256)
     {
+        console.log("Inside PendleMarket");
         require(!bootstrapped, "ALREADY_BOOTSTRAPPED");
+        console.log("Initializing Lock");
         _initializeLock(); // market's lock params should be initialized at bootstrap time
-
+        console.log("Transfer In");
         _transferIn(xyt, initialXytLiquidity);
+        console.log("Transfer In 2");
         _transferIn(token, initialTokenLiquidity);
-
+        console.log("Doing Math stuff");
         reserves[xyt].balance = initialXytLiquidity;
         reserves[xyt].weight = Math.RONE / 2;
         reserves[token].balance = initialTokenLiquidity;
         reserves[token].weight = Math.RONE / 2;
+        console.log("Completed Math Stuff");
 
         emit Sync(
             reserves[xyt].balance,
@@ -134,13 +139,14 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
             reserves[token].balance,
             reserves[token].weight
         );
-
+        console.log("Minting LP");
         _mintLp(INITIAL_LP);
+        console.log("Transferring Out LP");
         _transferOutLp(INITIAL_LP);
 
         blockNumLast = block.number;
         bootstrapped = true;
-
+        console.log("Completed");
         return INITIAL_LP;
     }
 
@@ -697,8 +703,11 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
     }
 
     function _initializeLock() internal {
+        console.log("expiry: %s, xytStartTime: %s", expiry, xytStartTime);
         uint256 duration = expiry - xytStartTime; // market expiry = xyt expiry
+        console.log("duration: %s", duration);
         uint256 lockDuration = (duration * data.lockNumerator()) / data.lockDenominator();
+        console.log("lockDuration: %s", lockDuration);
         lockStartTime = expiry - lockDuration;
     }
 }

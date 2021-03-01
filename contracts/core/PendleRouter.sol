@@ -33,6 +33,7 @@ import "../interfaces/IPendleMarketFactory.sol";
 import "../interfaces/IPendleMarket.sol";
 import "../periphery/Permissions.sol";
 import "../periphery/Withdrawable.sol";
+import "hardhat/console.sol";
 
 contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
     using SafeERC20 for IERC20;
@@ -412,9 +413,14 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         _transferIn(_xyt, _initialXytLiquidity);
         _transferIn(originalToken, _initialTokenLiquidity);
 
+        console.log("Completed TransferIn");
+
         uint256 lpAmount = market.bootstrap(_initialXytLiquidity, _initialTokenLiquidity);
+        console.log("market bootstrapped");
         emit Join(msg.sender, _initialXytLiquidity, _initialTokenLiquidity, address(market));
+        console.log("emitted join");
         _transferOut(address(market), lpAmount);
+        console.log("transferred out");
 
         address[] memory xyts = new address[](1);
         address[] memory tokens = new address[](1);
