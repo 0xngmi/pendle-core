@@ -154,7 +154,12 @@ const func = async function () {
     true
   );
   await httpProvider.waitForTransaction(tx.hash);
+  tx = await pendleData.setLockParams(
+    constants.misc.LOCK_NUMERATOR,
+    constants.misc.LOCK_DENOMINATOR
+  ); // lock market
 
+  await httpProvider.waitForTransaction(tx.hash);
   // =============================================================================
   console.log("----- Adding Aave Forge");
   tx = await pendle.addForge(

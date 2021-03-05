@@ -32,6 +32,8 @@ module.exports.devConstants = {
     TEST_EXPIRY_2: 1616656970,
     TEST_EXPIRY_3: 1619162570,
     ONE_YEAR: BigNumber.from(31536000),
+    LOCK_NUMERATOR: BigNumber.from(1),
+    LOCK_DENOMINATOR: BigNumber.from(180),
   },
   tokens: {
     USDT: {
@@ -72,6 +74,8 @@ module.exports.kovanConstants = {
     TEST_EXPIRY_2: 1614064970,
     TEST_EXPIRY_3: 1619162570,
     ONE_YEAR: BigNumber.from(31536000),
+    LOCK_NUMERATOR: BigNumber.from(1),
+    LOCK_DENOMINATOR: BigNumber.from(180),
   },
   tokens: {
     USDT: {

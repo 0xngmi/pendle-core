@@ -72,6 +72,8 @@ async function main() {
   );
 
   await pendleRouter.addForge(constants.misc.FORGE_AAVE, pendleAaveForge.address);
+  // await pendleData.setReentrancyWhitelist([pendleAMarketAddress, pendleCMarketAddress, pendleEthMarketAddress], [true, true, true]);
+  await pendleData.setLockParams(constants.misc.LOCK_NUMERATOR, constants.misc.LOCK_DENOMINATOR); // lock market
   console.log("Initialising completed")
   /**Transferring ausdt and usdt to Alice */
   if (chainId != 42) {
