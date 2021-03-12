@@ -321,16 +321,18 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
     ) public override pendleNonReentrant {
         address originalToken = _token;
         _token = _isETH(_token) ? address(weth) : _token;
-
         IPendleMarket market = IPendleMarket(data.getMarket(_marketFactoryId, _xyt, _token));
         require(address(market) != address(0), "MARKET_NOT_FOUND");
-
+        console.log("Transferring In Lp Tokens");
         _transferIn(address(market), _exactInLp);
 
+        console.log("Removing Market Liquidity");
         (uint256 xytAmount, uint256 tokenAmount) =
             market.removeMarketLiquidityAll(_exactInLp, _minOutXyt, _minOutToken);
 
+        console.log("Transferring out XYT");
         _transferOut(_xyt, xytAmount);
+        console.log("Transferring out Base Token");
         _transferOut(originalToken, tokenAmount);
 
         emit Exit(msg.sender, xytAmount, tokenAmount, address(market));

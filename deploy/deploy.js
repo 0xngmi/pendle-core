@@ -166,7 +166,7 @@ async function main() {
     constants.misc.TEST_EXPIRY
   );
 
-  const otAddress = await pendleData.otTokens(
+  let otAddress = await pendleData.otTokens(
     constants.misc.FORGE_AAVE,
     constants.tokens.USDT.address,
     constants.misc.TEST_EXPIRY
@@ -249,7 +249,13 @@ async function main() {
     constants.tokens.USDT.address,
     constants.misc.TEST_EXPIRY_2
   );
+  otAddress = await pendleData.otTokens(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_2
+  );
   console.log("xytAddress:", xytAddress);
+  console.log("otAddress:", otAddress);
   xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, alice);
   await xytContract.approve(pendleRouter.address, constants.misc.MAX_ALLOWANCE);
   console.log(`Approved PendleRouter to spend xyt`);
@@ -285,6 +291,20 @@ async function main() {
     { gasLimit: 8000000 }
   );
   console.log(`Bootstrapped Market`);
+  let lpTokenContract = new ethers.Contract(pendleMarketAddress, IATokenArtifact.abi, alice);
+
+  await lpTokenContract.approve(pendleRouter.address, constants.misc.MAX_ALLOWANCE);
+
+  await pendleRouter.removeMarketLiquidityAll(
+    constants.misc.FORGE_AAVE,
+    xytAddress,
+    usdtContract.address,
+    ethers.utils.parseEther('0.1'),
+    0,
+    0,
+    { gasLimit: 8000000 }
+  );
+  console.log(`Removed liquidity from Market`);
 
   console.log("\n========== Creating Test Pendle Market 3");
   xytAddress = await pendleData.xytTokens(
@@ -292,7 +312,13 @@ async function main() {
     constants.tokens.USDT.address,
     constants.misc.TEST_EXPIRY_3
   );
+  otAddress = await pendleData.otTokens(
+    constants.misc.FORGE_AAVE,
+    constants.tokens.USDT.address,
+    constants.misc.TEST_EXPIRY_3
+  );
   console.log("\txytAddress:", xytAddress);
+  console.log("\otAddress:", otAddress);
   await pendleRouter.createMarket(
     constants.misc.FORGE_AAVE,
     xytAddress,
