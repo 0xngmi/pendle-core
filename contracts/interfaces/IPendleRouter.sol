@@ -73,7 +73,7 @@ interface IPendleRouter {
      */
     event NewForge(bytes32 indexed forgeId, address indexed forgeAddress);
 
-  /**
+    /**
      * @dev Emitted when new forge is added
      * @param marketFactoryId Human Readable Market Factory ID in Bytes
      * @param marketFactoryAddress The Market Factory Address
@@ -208,7 +208,7 @@ interface IPendleRouter {
         uint256 exactInLp,
         uint256 minOutXyt,
         uint256 minOutToken
-    ) external;
+    ) external returns (uint256 xytAmount, uint256 tokenAmount);
 
     function removeMarketLiquiditySingle(
         bytes32 marketFactoryId,
@@ -217,7 +217,7 @@ interface IPendleRouter {
         bool forXyt,
         uint256 exactInLp,
         uint256 minOutAsset
-    ) external;
+    ) external returns (uint256 xytAmount, uint256 tokenAmount);
 
     /**
      * @notice Creates a market given a protocol ID, future yield token, and an ERC20 token.

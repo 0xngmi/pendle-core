@@ -48,6 +48,7 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
     address private constant ETH_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     modifier pendleNonReentrant() {
+        console.log("inside pendleNonReentrant");
         _checkNonReentrancy(); // use functions to reduce bytecode size
         _;
         // By storing the original value once again, a refund is triggered (see
@@ -108,6 +109,8 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         ot = address(data.otTokens(_forgeId, _underlyingAsset, _expiry));
         xyt = address(data.xytTokens(_forgeId, _underlyingAsset, _expiry));
         require(ot == address(0) && xyt == address(0), "DUPLICATE_YIELD_CONTRACT");
+
+        console.log("forge %s", address(forge));
 
         (ot, xyt) = forge.newYieldContracts(_underlyingAsset, _expiry);
     }
@@ -318,24 +321,22 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         uint256 _exactInLp,
         uint256 _minOutXyt,
         uint256 _minOutToken
-    ) public override pendleNonReentrant {
+    ) public override pendleNonReentrant returns (uint256 xytAmount, uint256 tokenAmount) {
         address originalToken = _token;
         _token = _isETH(_token) ? address(weth) : _token;
         IPendleMarket market = IPendleMarket(data.getMarket(_marketFactoryId, _xyt, _token));
         require(address(market) != address(0), "MARKET_NOT_FOUND");
-        console.log("Transferring In Lp Tokens");
         _transferIn(address(market), _exactInLp);
 
-        console.log("Removing Market Liquidity");
         (uint256 xytAmount, uint256 tokenAmount) =
             market.removeMarketLiquidityAll(_exactInLp, _minOutXyt, _minOutToken);
 
-        console.log("Transferring out XYT");
         _transferOut(_xyt, xytAmount);
         console.log("Transferring out Base Token");
         _transferOut(originalToken, tokenAmount);
 
         emit Exit(msg.sender, xytAmount, tokenAmount, address(market));
+        return (xytAmount, tokenAmount);
     }
 
     // remove market liquidity by xyt or base tokens
@@ -346,7 +347,7 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         bool _forXyt,
         uint256 _exactInLp,
         uint256 _minOutAsset
-    ) public override pendleNonReentrant {
+    ) public override pendleNonReentrant returns (uint256 xytAmount, uint256 tokenAmount) {
         address originalToken = _token;
         _token = _isETH(_token) ? address(weth) : _token;
 
@@ -364,8 +365,10 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
 
         if (_forXyt) {
             emit Exit(msg.sender, assetOut, 0, address(market));
+            return (assetOut, 0);
         } else {
             emit Exit(msg.sender, 0, assetOut, address(market));
+            return (0, assetOut);
         }
     }
 
@@ -776,6 +779,8 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         } else {
             IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         }
+
+        console.log("after transfer");
     }
 
     /// @dev Outbound transfer from router to msg.sender
