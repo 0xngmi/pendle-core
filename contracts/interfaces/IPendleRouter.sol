@@ -208,7 +208,7 @@ interface IPendleRouter {
         uint256 exactInLp,
         uint256 minOutXyt,
         uint256 minOutToken
-    ) external returns (uint256 xytAmount, uint256 tokenAmount);
+    ) external returns (uint256 exactOutXyt, uint256 exactOutToken);
 
     function removeMarketLiquiditySingle(
         bytes32 marketFactoryId,
@@ -217,7 +217,7 @@ interface IPendleRouter {
         bool forXyt,
         uint256 exactInLp,
         uint256 minOutAsset
-    ) external returns (uint256 xytAmount, uint256 tokenAmount);
+    ) external returns (uint256 exactOutXyt, uint256 exactOutToken);
 
     /**
      * @notice Creates a market given a protocol ID, future yield token, and an ERC20 token.
