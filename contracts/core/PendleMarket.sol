@@ -654,6 +654,7 @@ contract PendleMarket is IPendleMarket, PendleBaseToken {
     // sends out any due interests to msg.sender if he's an LP holder
     // this should be called before any functions that change someone's LPs
     function _settleLpInterests(address account) internal returns (uint256 dueInterests) {
+        if (account == msg.sender) return;
         _updateGlobalIncomeIndex();
         if (lastGlobalIncomeIndex[account] == 0) {
             lastGlobalIncomeIndex[account] = globalIncomeIndex;
