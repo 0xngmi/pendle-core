@@ -48,7 +48,6 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
     address private constant ETH_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     modifier pendleNonReentrant() {
-        console.log("inside pendleNonReentrant");
         _checkNonReentrancy(); // use functions to reduce bytecode size
         _;
         // By storing the original value once again, a refund is triggered (see
@@ -109,8 +108,6 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         ot = address(data.otTokens(_forgeId, _underlyingAsset, _expiry));
         xyt = address(data.xytTokens(_forgeId, _underlyingAsset, _expiry));
         require(ot == address(0) && xyt == address(0), "DUPLICATE_YIELD_CONTRACT");
-
-        console.log("forge %s", address(forge));
 
         (ot, xyt) = forge.newYieldContracts(_underlyingAsset, _expiry);
     }
@@ -321,7 +318,7 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         uint256 _exactInLp,
         uint256 _minOutXyt,
         uint256 _minOutToken
-    ) public override pendleNonReentrant returns (uint256 xytAmount, uint256 tokenAmount) {
+    ) public override pendleNonReentrant returns (uint256 exactOutXyt, uint256 exactOutToken) {
         address originalToken = _token;
         _token = _isETH(_token) ? address(weth) : _token;
         IPendleMarket market = IPendleMarket(data.getMarket(_marketFactoryId, _xyt, _token));
@@ -332,7 +329,6 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
             market.removeMarketLiquidityAll(_exactInLp, _minOutXyt, _minOutToken);
 
         _transferOut(_xyt, xytAmount);
-        console.log("Transferring out Base Token");
         _transferOut(originalToken, tokenAmount);
 
         emit Exit(msg.sender, xytAmount, tokenAmount, address(market));
@@ -347,7 +343,7 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         bool _forXyt,
         uint256 _exactInLp,
         uint256 _minOutAsset
-    ) public override pendleNonReentrant returns (uint256 xytAmount, uint256 tokenAmount) {
+    ) public override pendleNonReentrant returns (uint256 exactOutXyt, uint256 exactOutToken) {
         address originalToken = _token;
         _token = _isETH(_token) ? address(weth) : _token;
 
@@ -779,8 +775,6 @@ contract PendleRouter is IPendleRouter, Permissions, Withdrawable {
         } else {
             IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         }
-
-        console.log("after transfer");
     }
 
     /// @dev Outbound transfer from router to msg.sender
