@@ -1,11 +1,12 @@
-import { BigNumber as BN, Contract, providers, Wallet } from "ethers";
 import { expect } from "chai";
+import { BigNumber as BN, Contract, providers, Wallet } from "ethers";
 import ERC20 from "../../build/artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
 import AToken from "../../build/artifacts/contracts/interfaces/IAToken.sol/IAToken.json";
 import CToken from "../../build/artifacts/contracts/interfaces/ICToken.sol/ICToken.json";
 import TetherToken from "../../build/artifacts/contracts/interfaces/IUSDT.sol/IUSDT.json";
 import { liqParams } from "../core/fixtures/";
 import { aaveFixture } from "../core/fixtures/aave.fixture";
+import { aaveV2Fixture } from "../core/fixtures/aaveV2.fixture";
 import { consts, Token } from "./Constants";
 
 const hre = require("hardhat");
@@ -37,32 +38,43 @@ export async function evm_revert(snapshotId: string) {
 export async function mintOtAndXyt(
   provider: providers.Web3Provider,
   token: Token,
-  alice: Wallet,
+  user: Wallet,
   amount: BN,
-  pendleRouter: Contract
+  router: Contract
 ) {
-  await mintAaveToken(provider, token, alice, amount);
-  await mintCompoundToken(provider, token, alice, amount);
-  const { lendingPoolCore } = await aaveFixture(alice);
+  const { lendingPoolCore } = await aaveFixture(user);
+  const aContract = await getAContract(user, lendingPoolCore, token);
+  const cContract = await getCContract(user, token);
 
-  const aContract = await getAContract(alice, lendingPoolCore, token);
-  const cContract = await getCContract(alice, token);
-  await aContract.approve(pendleRouter.address, consts.MAX_ALLOWANCE);
-  await cContract.approve(pendleRouter.address, consts.MAX_ALLOWANCE);
-  await pendleRouter.tokenizeYield(
-    consts.FORGE_AAVE,
-    token.address,
-    consts.T0.add(consts.SIX_MONTH),
-    amount,
-    alice.address
-  );
-  await pendleRouter.tokenizeYield(
-    consts.FORGE_COMPOUND,
-    token.address,
-    consts.T0_C.add(consts.ONE_MONTH),
-    amount,
-    alice.address
-  );
+  let preATokenBal = await aContract.balanceOf(user.address);
+  let preCTokenBal = await cContract.balanceOf(user.address);
+
+  await mintAaveToken(provider, token, user, amount);
+  await mintCompoundToken(provider, token, user, amount);
+  await aContract.approve(router.address, consts.MAX_ALLOWANCE);
+  await cContract.approve(router.address, consts.MAX_ALLOWANCE);
+
+  let postATokenBal = await aContract.balanceOf(user.address);
+  let postCTokenBal = await cContract.balanceOf(user.address);
+
+  await router
+    .connect(user)
+    .tokenizeYield(
+      consts.FORGE_AAVE,
+      token.address,
+      consts.T0.add(consts.SIX_MONTH),
+      postATokenBal.sub(preATokenBal),
+      user.address
+    );
+  await router
+    .connect(user)
+    .tokenizeYield(
+      consts.FORGE_COMPOUND,
+      token.address,
+      consts.T0_C.add(consts.SIX_MONTH),
+      postCTokenBal.sub(preCTokenBal),
+      user.address
+    );
 }
 
 export async function mint(
@@ -75,7 +87,7 @@ export async function mint(
   const signer = await provider.getSigner(token.owner!);
 
   const contractToken = new Contract(token.address, TetherToken.abi, signer);
-  const tokenAmount = amountToWei(token, amount);
+  const tokenAmount = amountToWei(amount, token.decimal);
   await contractToken.issue(tokenAmount);
   await contractToken.transfer(alice.address, tokenAmount);
 }
@@ -86,7 +98,7 @@ export async function convertToAaveToken(
   amount: BN
 ) {
   const { lendingPool, lendingPoolCore } = await aaveFixture(alice);
-  const tokenAmount = amountToWei(token, amount);
+  const tokenAmount = amountToWei(amount, token.decimal);
 
   const erc20 = new Contract(token.address, ERC20.abi, alice);
   await erc20.approve(lendingPoolCore.address, tokenAmount);
@@ -94,28 +106,32 @@ export async function convertToAaveToken(
   await lendingPool.deposit(token.address, tokenAmount, 0);
 }
 
+export async function convertToAaveV2Token(
+  token: Token,
+  alice: Wallet,
+  amount: BN
+) {
+  const { lendingPool } = await aaveV2Fixture(alice);
+  const tokenAmount = amountToWei(amount, token.decimal);
+
+  const erc20 = new Contract(token.address, ERC20.abi, alice);
+  await erc20.approve(lendingPool.address, tokenAmount);
+
+  await lendingPool.deposit(token.address, tokenAmount, alice.address, 0);
+}
+
 export async function convertToCompoundToken(
   token: Token,
   alice: Wallet,
   amount: BN
 ) {
-  const tokenAmount = amountToWei(token, amount);
+  const tokenAmount = amountToWei(amount, token.decimal);
 
   const cToken = new Contract(token.compound, CToken.abi, alice);
   const erc20 = new Contract(token.address, ERC20.abi, alice);
   await erc20.approve(cToken.address, tokenAmount);
 
   await cToken.mint(tokenAmount);
-  /*const balanceTX = await cToken.balanceOfUnderlying(alice.address);
-  const balance = await cToken.callStatic.balanceOfUnderlying(alice.address);
-  const cTokens = await cToken.balanceOf(alice.address);
-  const rateTX = await cToken.exchangeRateCurrent();
-  const rate = await cToken.callStatic.exchangeRateCurrent();
-  console.log('Amount: ' + amount);
-  console.log('Balance: ' + balance);
-  console.log('Rate: ' + rate);
-  console.log('Ctokens: ' + cTokens);
-  console.log('Total: ' + cTokens * rate / (10 ** 18));*/
 }
 
 export async function mintAaveToken(
@@ -126,6 +142,16 @@ export async function mintAaveToken(
 ) {
   await mint(provider, token, alice, amount);
   await convertToAaveToken(token, alice, amount);
+}
+
+export async function mintAaveV2Token(
+  provider: providers.Web3Provider,
+  token: Token,
+  alice: Wallet,
+  amount: BN
+) {
+  await mint(provider, token, alice, amount);
+  await convertToAaveV2Token(token, alice, amount);
 }
 
 export async function mintCompoundToken(
@@ -147,6 +173,7 @@ export async function transferToken(
   const erc20 = new Contract(token.address, ERC20.abi, from);
   await erc20.transfer(to, amount);
 }
+
 export async function getAContract(
   alice: Wallet,
   lendingPoolCore: Contract,
@@ -156,6 +183,17 @@ export async function getAContract(
     token.address
   );
   return new Contract(aTokenAddress, ERC20.abi, alice);
+}
+
+export async function getA2Contract(
+  alice: Wallet,
+  aaveV2Forge: Contract,
+  token: Token
+): Promise<Contract> {
+  const aContractAddress = await aaveV2Forge.callStatic.getYieldBearingToken(
+    token.address
+  );
+  return new Contract(aContractAddress, ERC20.abi, alice);
 }
 
 export async function getCContract(
@@ -172,8 +210,13 @@ export async function getERC20Contract(
   return new Contract(token.address, AToken.abi, alice);
 }
 
-export function amountToWei({ decimal }: Token, amount: BN) {
-  return BN.from(10 ** decimal).mul(amount);
+/**
+ * convert an amount to Wei
+ * @param inp if inp is number => inp is the number of decimal digits
+ *            if inp is Token => the number of decimal digits will be extracted from Token
+ */
+export function amountToWei(amount: BN, decimal: number) {
+  return BN.from(10).pow(decimal).mul(amount);
 }
 
 export async function advanceTime(

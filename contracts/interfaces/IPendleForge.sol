@@ -72,12 +72,14 @@ interface IPendleForge {
 
     /**
      * @dev Emitted when interest claim is settled
+     * @param forgeId The forgeId
      * @param underlyingAsset the address of the underlying asset
      * @param expiry The expiry of the XYT token
      * @param receiver Interest receiver Address
      * @param amount The amount of interest claimed
      **/
     event DueInterestSettled(
+        bytes32 forgeId,
         address indexed underlyingAsset,
         uint256 indexed expiry,
         uint256 amount,
@@ -120,7 +122,15 @@ interface IPendleForge {
         uint256 expiry,
         uint256 amountToTokenize,
         address to
-    ) external returns (address ot, address xyt);
+    )
+        external
+        returns (
+            address ot,
+            address xyt,
+            uint256 amountTokenMinted
+        );
+
+    function getYieldBearingToken(address underlyingAsset) external returns (address);
 
     /**
      * @notice Gets a reference to the PendleRouter contract.
@@ -128,11 +138,11 @@ interface IPendleForge {
      **/
     function router() external view returns (IPendleRouter);
 
+    function data() external view returns (IPendleData);
+
     /**
      * @notice Gets the bytes32 ID of the forge.
      * @return Returns the forge and protocol identifier.
      **/
     function forgeId() external view returns (bytes32);
-
-    function getYieldBearingToken(address underlyingAsset) external view returns (address);
 }

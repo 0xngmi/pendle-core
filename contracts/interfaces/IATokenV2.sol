@@ -22,36 +22,12 @@
  */
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-/**
- * @title Compound ERC20 CToken
- *
- * @dev Implementation of the interest bearing token for the DLP protocol.
- * @author Compound
- */
-interface ICToken is IERC20 {
-    /*** User Interface ***/
-
-    function balanceOfUnderlying(address owner) external returns (uint256);
-
-    function isCToken() external returns (bool);
-
-    function underlying() external returns (address);
-
-    function mint(uint256 mintAmount) external returns (uint256);
-
-    function exchangeRateCurrent() external returns (uint256);
-
-    function borrow(uint256 borrowAmount) external returns (uint256);
-
-    function getAccountSnapshot(address account)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
+interface IATokenV2 {
+    /**
+     * @dev Returns the scaled balance of the user. The scaled balance is the sum of all the
+     * updated stored balance divided by the reserve's liquidity index at the moment of the update
+     * @param user The user whose balance is calculated
+     * @return The scaled balance of the user
+     **/
+    function scaledBalanceOf(address user) external view returns (uint256);
 }
