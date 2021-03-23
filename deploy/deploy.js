@@ -42,6 +42,19 @@ async function main() {
   const pendleTreasury = await PendleTreasury.deploy(alice.address);
   console.log("PendleTreasury deployed to:", pendleTreasury.address);
 
+  const PendleData = await ethers.getContractFactory("PendleData");
+  const pendleData = await PendleData.deploy(alice.address, pendleTreasury.address);
+  console.log("PendleData deployed to:", pendleData.address);
+
+  const PendleMarketReader = await ethers.getContractFactory("PendleMarketReader");
+  const pendleMarketReader = await PendleMarketReader.deploy(pendleData.address);
+  console.log("PendleMarketReader deployed to:", pendleMarketReader.address);
+
+  console.log("\n========== Initialising core contracts");
+  await pendleData.initialize(pendleRouter.address);
+  await pendleRouter.initialize(pendleData.address);
+
+  console.log("\n========== Deploying Aave & Compound Forge and Market Factories");
   const PendleAaveForge = await ethers.getContractFactory("PendleAaveForge");
   const pendleAaveForge = await PendleAaveForge.deploy(pendleRouter.address, pendleRouter.address,
     constants.misc.AAVE_LENDING_POOL_CORE_ADDRESS,
@@ -53,49 +66,55 @@ async function main() {
   console.log("PendleAMarketFactory deployed to:", pendleAMarketFactory.address);
 
   const PendleCompoundForge = await ethers.getContractFactory("PendleCompoundForge");
-  const pendleCompoundForge = await PendleCompoundForge.deploy(alice.address, pendleRouter.address, constants.misc.FORGE_COMPOUND);
+  const pendleCompoundForge = await PendleCompoundForge.deploy(alice.address, pendleRouter.address, constants.misc.COMPOUND_COMPTROLLER_ADDRESS, constants.misc.FORGE_COMPOUND);
   console.log("PendleCompoundForge deployed to:", pendleCompoundForge.address);
 
   const pendleCMarketFactory = await PendleMarketFactory.deploy(alice.address, constants.misc.FORGE_COMPOUND);
   console.log("PendleCMarketFactory deployed to:", pendleCMarketFactory.address);
 
-  const PendleData = await ethers.getContractFactory("PendleData");
-  const pendleData = await PendleData.deploy(alice.address, pendleTreasury.address);
-  console.log("PendleData deployed to:", pendleData.address);
-
-  console.log("\n========== Initialising core contracts");
-  await pendleData.initialize(pendleRouter.address);
+  console.log("\n========== Initialising Markets and Forges");
   await pendleAMarketFactory.initialize(pendleRouter.address);
+  console.log("test 1")
   await pendleCMarketFactory.initialize(pendleRouter.address);
-  await pendleRouter.initialize(pendleData.address);
+  console.log("test 2")
 
   await pendleRouter.addMarketFactory(
     constants.misc.FORGE_AAVE,
     pendleAMarketFactory.address
   );
+  console.log("test 3")
   await pendleData.setForgeFactoryValidity(
     constants.misc.FORGE_AAVE,
     constants.misc.FORGE_AAVE,
     true
   );
+  console.log("test 4")
 
   await pendleRouter.addForge(constants.misc.FORGE_AAVE, pendleAaveForge.address);
+  console.log("test 5")
 
   await pendleRouter.addMarketFactory(
     constants.misc.FORGE_COMPOUND,
     pendleCMarketFactory.address
   );
+  console.log("test 6")
   await pendleData.setForgeFactoryValidity(
     constants.misc.FORGE_COMPOUND,
     constants.misc.FORGE_COMPOUND,
     true
   );
+  console.log("test 7")
 
   await pendleRouter.addForge(constants.misc.FORGE_COMPOUND, pendleCompoundForge.address);
+  console.log("test 8")
+
   await pendleCompoundForge.registerCTokens([constants.tokens.USDT.address], [constants.tokens.USDT.compound]);
+  console.log("test 9")
 
   await pendleData.setLockParams(constants.misc.LOCK_NUMERATOR, constants.misc.LOCK_DENOMINATOR); // lock market
+
   console.log("Initialising completed")
+
   /**Transferring ausdt and usdt to Alice */
   if (chainId != 42) {
     console.log("\n========== Transferring ausdt and usdt to Alice");
@@ -163,8 +182,7 @@ async function main() {
   await pendleRouter.newYieldContracts(
     constants.misc.FORGE_AAVE,
     constants.tokens.USDT.address,
-    constants.misc.TEST_EXPIRY,
-    { gasLimit: 8000000 }
+    constants.misc.TEST_EXPIRY
   );
 
   await pendleRouter.newYieldContracts(

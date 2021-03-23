@@ -17,10 +17,11 @@ const {
   PendleTreasuryArtifact,
   PendleAaveForgeArtifact,
   PendleCompoundForgeArtifact,
-  PendleAaveMarketFactoryArtifact,
+  PendleMarketFactoryArtifact,
   PendleDataArtifact,
   IATokenArtifact,
   IUSDTArtifact,
+  PendleMarketReaderArtifact,
 } = require("../deploy_helpers/exports");
 
 const TEST_AMOUNT_TO_MINT = 100000000000;
@@ -86,6 +87,45 @@ const func = async function () {
     `Deployed Pendle Treasury Contract at: ${pendleTreasury.address}`
   );
 
+  const pendleDataContractFactory = new ethers.ContractFactory(
+    PendleDataArtifact.abi,
+    PendleDataArtifact.bytecode,
+    signer
+  );
+  const pendleData = await pendleDataContractFactory.deploy(
+    deployer,
+    pendleTreasury.address
+  );
+  tx = pendleData.deployTransaction;
+  await httpProvider.waitForTransaction(tx.hash);
+  console.log(`Deployed PendleData Contract at: ${pendleData.address}`);
+
+  const pendleMarketReaderContractFactory = new ethers.ContractFactory(
+    PendleMarketReaderArtifact.abi,
+    PendleMarketReaderArtifact.bytecode,
+    signer
+  );
+  const pendleMarketReader = await pendleMarketReaderContractFactory.deploy(
+    pendleData.address
+  );
+  tx = pendleMarketReader.deployTransaction;
+  await httpProvider.waitForTransaction(tx.hash);
+  console.log(
+    `Deployed PendleMarketReader Contract at: ${pendleMarketReader.address}`
+  );
+
+  // =============================================================================
+  console.log("----- Initialising core contracts");
+
+  tx = await pendleData.initialize(pendle.address);
+  await httpProvider.waitForTransaction(tx.hash);
+
+  tx = await pendle.initialize(pendleData.address);
+  await httpProvider.waitForTransaction(tx.hash);
+
+  console.log(
+    "\n========== Deploying Aave & Compound Forge and Market Factories"
+  );
   const pendleAaveForgeContractFactory = new ethers.ContractFactory(
     PendleAaveForgeArtifact.abi,
     PendleAaveForgeArtifact.bytecode,
@@ -104,8 +144,8 @@ const func = async function () {
   );
 
   const pendleAaveMarketFactoryContractFactory = new ethers.ContractFactory(
-    PendleAaveMarketFactoryArtifact.abi,
-    PendleAaveMarketFactoryArtifact.bytecode,
+    PendleMarketFactoryArtifact.abi,
+    PendleMarketFactoryArtifact.bytecode,
     signer
   );
   const pendleAaveMarketFactory = await pendleAaveMarketFactoryContractFactory.deploy(
@@ -127,6 +167,7 @@ const func = async function () {
   const pendleCompoundForge = await pendleCompoundForgeContractFactory.deploy(
     signer.address,
     pendle.address,
+    constants.misc.COMPOUND_COMPTROLLER_ADDRESS,
     constants.misc.FORGE_COMPOUND
   );
   tx = pendleCompoundForge.deployTransaction;
@@ -145,39 +186,22 @@ const func = async function () {
     `Deployed Pendle Compound Market Factory Contract at: ${pendleCompoundMarketFactory.address}`
   );
 
-  const pendleDataContractFactory = new ethers.ContractFactory(
-    PendleDataArtifact.abi,
-    PendleDataArtifact.bytecode,
-    signer
-  );
-  const pendleData = await pendleDataContractFactory.deploy(
-    deployer,
-    pendleTreasury.address
-  );
-  tx = pendleData.deployTransaction;
-  await httpProvider.waitForTransaction(tx.hash);
-  console.log(`Deployed PendleData Contract at: ${pendleData.address}`);
-
-  // =============================================================================
-  console.log("----- Initialising core contracts");
-
-  tx = await pendleData.initialize(pendle.address);
-  await httpProvider.waitForTransaction(tx.hash);
-
+  console.log("\n========== Initialising Markets and Forges");
   tx = await pendleAaveMarketFactory.initialize(pendle.address);
   await httpProvider.waitForTransaction(tx.hash);
 
+  console.log("test 1");
+
   tx = await pendleCompoundMarketFactory.initialize(pendle.address);
   await httpProvider.waitForTransaction(tx.hash);
-
-  tx = await pendle.initialize(pendleData.address);
-  await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 2");
 
   tx = await pendle.addMarketFactory(
     constants.misc.FORGE_AAVE,
     pendleAaveMarketFactory.address
   );
   await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 3");
 
   tx = await pendleData.setForgeFactoryValidity(
     constants.misc.FORGE_AAVE,
@@ -185,12 +209,21 @@ const func = async function () {
     true
   );
   await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 4");
+
+  tx = await pendle.addForge(
+    constants.misc.FORGE_AAVE,
+    pendleAaveForge.address
+  );
+  await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 5");
 
   tx = await pendle.addMarketFactory(
     constants.misc.FORGE_COMPOUND,
     pendleCompoundMarketFactory.address
   );
   await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 6");
 
   tx = await pendleData.setForgeFactoryValidity(
     constants.misc.FORGE_COMPOUND,
@@ -198,31 +231,27 @@ const func = async function () {
     true
   );
   await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 7");
 
   tx = await pendle.addForge(
     constants.misc.FORGE_COMPOUND,
     pendleCompoundForge.address
   );
   await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 8");
 
   tx = await pendleCompoundForge.registerCTokens(
     [constants.tokens.USDT.address],
-    [constants.tokens.USDT.compound]
+    [constants.tokens.USDT.compound],
   );
   await httpProvider.waitForTransaction(tx.hash);
+  console.log("test 9");
 
   tx = await pendleData.setLockParams(
     constants.misc.LOCK_NUMERATOR,
     constants.misc.LOCK_DENOMINATOR
   ); // lock market
 
-  await httpProvider.waitForTransaction(tx.hash);
-  // =============================================================================
-  console.log("----- Adding Aave Forge");
-  tx = await pendle.addForge(
-    constants.misc.FORGE_AAVE,
-    pendleAaveForge.address
-  );
   await httpProvider.waitForTransaction(tx.hash);
 
   // accounts[0] is assumed to have USDTs and AUSDTs already
@@ -525,13 +554,13 @@ const func = async function () {
   );
   await httpProvider.waitForTransaction(tx.hash);
 
-   xytAddress = await pendleData.xytTokens(
+  xytAddress = await pendleData.xytTokens(
     constants.misc.FORGE_COMPOUND,
     constants.tokens.USDT.address,
     constants.misc.TEST_EXPIRY
   );
 
-   otAddress = await pendleData.otTokens(
+  otAddress = await pendleData.otTokens(
     constants.misc.FORGE_COMPOUND,
     constants.tokens.USDT.address,
     constants.misc.TEST_EXPIRY
@@ -539,11 +568,7 @@ const func = async function () {
   console.log(`\tXYT contract deployed, address = ${xytAddress}`);
   console.log(`\tOT contract deployed, address = ${otAddress}`);
 
- xytContract = new ethers.Contract(
-    xytAddress,
-    IATokenArtifact.abi,
-    signer
-  );
+  xytContract = new ethers.Contract(xytAddress, IATokenArtifact.abi, signer);
 
   // const aUSDT = new ethers.Contract(aUSDTAddress, IUSDTArtifact.abi, signer)
   tx = await pendle.tokenizeYield(
