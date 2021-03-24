@@ -67,7 +67,7 @@ module.exports.kovanConstants = {
       "0x95D1189Ed88B380E319dF73fF00E479fcc4CFa45",
     AAVE_LENDING_POOL_ADDRESS: "0x580D4Fdc4BF8f9b5ae2fb9225D584fED4AD5375c",
     AAVE_DUMMY_REFERRAL_CODE: 0,
-    COMPOUND_COMPTROLLER_ADDRESS: "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
+    COMPOUND_COMPTROLLER_ADDRESS: "0x5eae89dc1c671724a672ff0630122ee834098657",
     FORGE_AAVE: utils.formatBytes32String("Aave"),
     FORGE_COMPOUND: utils.formatBytes32String("Compound"),
     ZERO_ADDRESS: "0x0000000000000000000000000000000000000000",
@@ -84,8 +84,14 @@ module.exports.kovanConstants = {
     LOCK_DENOMINATOR: BigNumber.from(180),
   },
   tokens: {
-    USDT: {
+    USDT_AAVE: {
       address: "0x13512979ade267ab5100878e2e0f485b568328a4",
+      decimal: 6,
+      owner: "0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828",
+      compound: "0x3f0a0ea2f86bae6362cf9799b523ba06647da018",
+    },
+    USDT_COMPOUND: {
+      address: "0xA68895Df8F959F5827A6B6427C0176044A4beba6",
       decimal: 6,
       owner: "0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828",
       compound: "0x3f0a0ea2f86bae6362cf9799b523ba06647da018",
