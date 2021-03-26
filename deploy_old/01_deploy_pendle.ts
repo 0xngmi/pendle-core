@@ -150,6 +150,12 @@ const func = async function () {
     `Deployed Pendle Aave Forge Contract at: ${pendleAaveForge.address}`
   );
 
+  tx = await pendleData.setReentrancyWhitelist(
+    [pendleAaveForge.address],
+    [true]
+  );
+  await httpProvider.waitForTransaction(tx.hash);
+
   const pendleAaveMarketFactoryContractFactory = new ethers.ContractFactory(
     PendleMarketFactoryArtifact.abi,
     PendleMarketFactoryArtifact.bytecode,
@@ -182,6 +188,12 @@ const func = async function () {
   console.log(
     `Deployed Pendle Compound Forge Contract at: ${pendleCompoundForge.address}`
   );
+
+  tx = await pendleData.setReentrancyWhitelist(
+    [pendleAaveForge.address, pendleCompoundForge.address],
+    [true, true]
+  );
+  await httpProvider.waitForTransaction(tx.hash);
 
   const pendleCompoundMarketFactory = await pendleAaveMarketFactoryContractFactory.deploy(
     deployer,
@@ -339,6 +351,12 @@ const func = async function () {
   console.log(`\tXYT contract deployed, address = ${xytAddress}`);
   console.log(`\tOT contract deployed, address = ${otAddress}`);
 
+  const compoundUsdtContract = new ethers.Contract(
+    constants.tokens.USDT_COMPOUND.address,
+    IATokenArtifact.abi,
+    signer
+  );
+
   const usdtContract = new ethers.Contract(
     constants.tokens.USDT_AAVE.address,
     IATokenArtifact.abi,
@@ -390,11 +408,26 @@ const func = async function () {
   );
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress1}`);
+  tx = await pendleData.setReentrancyWhitelist(
+    [
+      pendleAaveForge.address,
+      pendleCompoundForge.address,
+      pendleMarketAddress1,
+    ],
+    [true, true, true]
+  );
+  await httpProvider.waitForTransaction(tx.hash);
 
   tx = await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   await httpProvider.waitForTransaction(tx.hash);
 
   tx = await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  await httpProvider.waitForTransaction(tx.hash);
+
+  tx = await compoundUsdtContract.approve(
+    pendle.address,
+    constants.misc.MAX_ALLOWANCE
+  );
   await httpProvider.waitForTransaction(tx.hash);
 
   console.log(`\tApproved PendleRouter to spend xyt and usdt`);
@@ -405,22 +438,21 @@ const func = async function () {
     usdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    { gasLimit: 8000000 }
+    { gasLimit: 900000 }
   );
   await httpProvider.waitForTransaction(tx.hash);
   console.log(`\tBootstrapped Market`);
 
-  tx = await pendle.swapExactIn(
-    xytAddress,
-    constants.tokens.USDT_AAVE.address,
-    TEST_AMOUNT_TO_BOOTSTRAP / 10,
-    0,
-    constants.misc.MAX_ALLOWANCE,
-    constants.misc.FORGE_AAVE,
-    { gasLimit: 8000000 }
-  );
-  await httpProvider.waitForTransaction(tx.hash);
-  console.log(`\tDid a test trade`);
+  // tx = await pendle.swapExactIn(
+  //   xytAddress,
+  //   constants.tokens.USDT_AAVE.address,
+  //   TEST_AMOUNT_TO_BOOTSTRAP / 10,
+  //   0,
+  //   constants.misc.MAX_ALLOWANCE,
+  //   constants.misc.FORGE_AAVE,
+  // );
+  // await httpProvider.waitForTransaction(tx.hash);
+  // console.log(`\tDid a test trade`);
 
   // =============================================================================
   console.log("----- Creating Test Pendle market 2");
@@ -451,6 +483,16 @@ const func = async function () {
   );
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress2}`);
+  tx = await pendleData.setReentrancyWhitelist(
+    [
+      pendleAaveForge.address,
+      pendleCompoundForge.address,
+      pendleMarketAddress1,
+      pendleMarketAddress2,
+    ],
+    [true, true, true, true]
+  );
+  await httpProvider.waitForTransaction(tx.hash);
 
   tx = await pendle.tokenizeYield(
     constants.misc.FORGE_AAVE,
@@ -474,7 +516,7 @@ const func = async function () {
     usdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    { gasLimit: 8000000 }
+    { gasLimit: 900000 }
   );
   await httpProvider.waitForTransaction(tx.hash);
 
@@ -509,6 +551,17 @@ const func = async function () {
   );
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress3}`);
+  tx = await pendleData.setReentrancyWhitelist(
+    [
+      pendleAaveForge.address,
+      pendleCompoundForge.address,
+      pendleMarketAddress1,
+      pendleMarketAddress2,
+      pendleMarketAddress3,
+    ],
+    [true, true, true, true, true]
+  );
+  await httpProvider.waitForTransaction(tx.hash);
 
   tx = await pendle.tokenizeYield(
     constants.misc.FORGE_AAVE,
@@ -532,14 +585,16 @@ const func = async function () {
     usdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    { gasLimit: 8000000 }
+    { gasLimit: 900000 }
   );
   await httpProvider.waitForTransaction(tx.hash);
 
   console.log(`\tBootstrapped Market`);
 
   // =============================================================================
-  console.log("----- Creating Compound Yield contracts and minting XYT/OTs");
+  console.log(
+    "\n\n----- Creating Compound Yield contracts and minting XYT/OTs"
+  );
   tx = await pendle.newYieldContracts(
     constants.misc.FORGE_COMPOUND,
     constants.tokens.USDT_COMPOUND.address,
@@ -604,10 +659,20 @@ const func = async function () {
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress4}`);
 
-  tx = await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  tx = await pendleData.setReentrancyWhitelist(
+    [
+      pendleAaveForge.address,
+      pendleCompoundForge.address,
+      pendleMarketAddress1,
+      pendleMarketAddress2,
+      pendleMarketAddress3,
+      pendleMarketAddress4,
+    ],
+    [true, true, true, true, true, true]
+  );
   await httpProvider.waitForTransaction(tx.hash);
 
-  tx = await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
+  tx = await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   await httpProvider.waitForTransaction(tx.hash);
 
   console.log(`\tApproved PendleRouter to spend xyt and usdt`);
@@ -615,25 +680,24 @@ const func = async function () {
   tx = await pendle.bootstrapMarket(
     constants.misc.FORGE_COMPOUND,
     xytAddress,
-    usdtContract.address,
+    compoundUsdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    { gasLimit: 8000000 }
+    { gasLimit: 1000000 }
   );
   await httpProvider.waitForTransaction(tx.hash);
   console.log(`\tBootstrapped Market`);
 
-  tx = await pendle.swapExactIn(
-    xytAddress,
-    constants.tokens.USDT_COMPOUND.address,
-    TEST_AMOUNT_TO_BOOTSTRAP / 10,
-    0,
-    constants.misc.MAX_ALLOWANCE,
-    constants.misc.FORGE_COMPOUND,
-    { gasLimit: 8000000 }
-  );
-  await httpProvider.waitForTransaction(tx.hash);
-  console.log(`\tDid a test trade`);
+  // tx = await pendle.swapExactIn(
+  //   xytAddress,
+  //   constants.tokens.USDT_COMPOUND.address,
+  //   TEST_AMOUNT_TO_BOOTSTRAP / 10,
+  //   0,
+  //   constants.misc.MAX_ALLOWANCE,
+  //   constants.misc.FORGE_COMPOUND
+  // );
+  // await httpProvider.waitForTransaction(tx.hash);
+  // console.log(`\tDid a test trade`);
 
   // =============================================================================
   console.log("----- Creating Test Pendle market 2");
@@ -665,6 +729,20 @@ const func = async function () {
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress5}`);
 
+  tx = await pendleData.setReentrancyWhitelist(
+    [
+      pendleAaveForge.address,
+      pendleCompoundForge.address,
+      pendleMarketAddress1,
+      pendleMarketAddress2,
+      pendleMarketAddress3,
+      pendleMarketAddress4,
+      pendleMarketAddress5,
+    ],
+    [true, true, true, true, true, true, true]
+  );
+  await httpProvider.waitForTransaction(tx.hash);
+
   tx = await pendle.tokenizeYield(
     constants.misc.FORGE_COMPOUND,
     constants.tokens.USDT_COMPOUND.address,
@@ -684,10 +762,10 @@ const func = async function () {
   tx = await pendle.bootstrapMarket(
     constants.misc.FORGE_COMPOUND,
     xytAddress,
-    usdtContract.address,
+    compoundUsdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    { gasLimit: 8000000 }
+    { gasLimit: 1000000 }
   );
   await httpProvider.waitForTransaction(tx.hash);
 
@@ -723,6 +801,22 @@ const func = async function () {
 
   console.log(`\tDeployed a XYT/USDT market at ${pendleMarketAddress6}`);
 
+  tx = await pendleData.setReentrancyWhitelist(
+    [
+      pendleAaveForge.address,
+      pendleCompoundForge.address,
+      pendleMarketAddress1,
+      pendleMarketAddress2,
+      pendleMarketAddress3,
+      pendleMarketAddress4,
+      pendleMarketAddress5,
+      pendleMarketAddress6,
+    ],
+    [true, true, true, true, true, true, true, true]
+  );
+
+  await httpProvider.waitForTransaction(tx.hash);
+
   tx = await pendle.tokenizeYield(
     constants.misc.FORGE_COMPOUND,
     constants.tokens.USDT_COMPOUND.address,
@@ -736,33 +830,18 @@ const func = async function () {
 
   tx = await xytContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   await httpProvider.waitForTransaction(tx.hash);
-  // await usdtContract.approve(pendle.address, constants.misc.MAX_ALLOWANCE);
   console.log(`\tApproved PendleRouter to spend xyt and usdt`);
 
   tx = await pendle.bootstrapMarket(
     constants.misc.FORGE_COMPOUND,
     xytAddress,
-    usdtContract.address,
+    compoundUsdtContract.address,
     TEST_AMOUNT_TO_BOOTSTRAP,
     TEST_AMOUNT_TO_BOOTSTRAP,
-    { gasLimit: 8000000 }
+    { gasLimit: 1000000 }
   );
   await httpProvider.waitForTransaction(tx.hash);
 
   console.log(`\tBootstrapped Market`);
-
-  tx = await pendleData.setReentrancyWhitelist(
-    [
-      pendleMarketAddress1,
-      pendleMarketAddress2,
-      pendleMarketAddress3,
-      pendleMarketAddress4,
-      pendleMarketAddress5,
-      pendleMarketAddress6,
-    ],
-    [true, true, true, true, true, true]
-  );
-
-  await httpProvider.waitForTransaction(tx.hash);
 };
 func();
