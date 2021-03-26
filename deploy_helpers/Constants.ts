@@ -91,7 +91,7 @@ module.exports.kovanConstants = {
       compound: "0x3f0a0ea2f86bae6362cf9799b523ba06647da018",
     },
     USDT_COMPOUND: {
-      address: "0xA68895Df8F959F5827A6B6427C0176044A4beba6",
+      address: "0x07de306ff27a2b630b1141956844eb1552b956b5",
       decimal: 6,
       owner: "0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828",
       compound: "0x3f0a0ea2f86bae6362cf9799b523ba06647da018",
