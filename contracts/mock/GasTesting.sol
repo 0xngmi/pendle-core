@@ -28,31 +28,61 @@ import "../core/PendleRouter.sol";
 contract GasTesting {
     mapping(uint256 => uint256) test256;
     mapping(uint256 => uint128) test128;
-    mapping(uint256 => uint32) test32;
+    mapping(uint32 => uint32) test32;
 
-    /* mapping(uint256 => uint256) test256;
-    mapping(uint256 => uint256) test256;
-    uint128 test128_1;
-    uint32 test32_1;
-    uint256 test256_2;
-    uint128 test128_2;
-    uint32 test32_2; */
+    uint256 test256_number0;
+    uint256 test256_number1;
+    uint256 test256_number2;
+    uint256 test256_number3;
+    uint256 test256_number4;
+    uint256 test256_number5;
+    uint256 test256_number6;
+    uint256 test256_number7;
+    uint256 test256_number8;
+    uint256 test256_number9;
+    uint256 test256_number10;
 
-    function change256(uint256 times) public {
+    function change256_mapping(uint256 times) public {
         for (uint256 i = 0; i < times; i++) {
-            test256[i] = block.timestamp;
+            test256[i] = block.timestamp+i;
         }
     }
 
-    function change128(uint256 times) public {
+    function change128_mapping(uint256 times) public {
         for (uint256 i = 0; i < times; i++) {
-            test128[i] = uint128(block.timestamp);
+            test128[i] = uint128(block.timestamp+i);
         }
     }
 
-    function change32(uint256 times) public {
+    function change32_mapping(uint256 times) public {
+        for (uint32 i = 0; i < times; i++) {
+            test32[i] = uint32(block.timestamp)+i;
+        }
+    }
+
+    function change256_vars(uint256 times) public {
         for (uint256 i = 0; i < times; i++) {
-            test32[i] = uint32(block.timestamp);
+            if (i==0) {
+                test256_number0 = block.timestamp;
+            } else if (i==1) {
+                test256_number1 = block.timestamp;
+            } else if (i==2) {
+                test256_number2 = block.timestamp;
+            } else if (i==3) {
+                test256_number3 = block.timestamp;
+            } else if (i==4) {
+                test256_number4 = block.timestamp;
+            } else if (i==5) {
+                test256_number5 = block.timestamp;
+            } else if (i==6) {
+                test256_number6 = block.timestamp;
+            } else if (i==7) {
+                test256_number7 = block.timestamp;
+            } else if (i==8) {
+                test256_number8 = block.timestamp;
+            } else if (i==9) {
+                test256_number9 = block.timestamp;
+            }
         }
     }
 }
