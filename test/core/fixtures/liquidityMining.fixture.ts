@@ -35,12 +35,13 @@ export interface liqParams {
   NUMBER_OF_EPOCHS: BN,
   VESTING_EPOCHS: BN,
   TOTAL_NUMERATOR: BN,
+  ALLOCATION_SETTINGS: BN[] // this is allocation setting for the test expiry, at epoch i
 }
 export class UserStakeAction {
   time: BN;
   isStaking: boolean;
   amount: BN;
-  id: number; // will not be used in calExpectedRewards
+  id: number; // will not be used in calExpectedLiqMiningRewards
   constructor(time: BN, amount: BN, isStaking: boolean, id: number) {
     this.time = time;
     this.amount = amount;
@@ -50,13 +51,15 @@ export class UserStakeAction {
 }
 
 // TOTAL_DURATION = 10 days * 20 = 200 days
+const TOTAL_NUMERATOR = BN.from(10 ** 9);
 const params: liqParams = {
   START_TIME: consts.T0_C.add(1000), // starts in 1000s
   EPOCH_DURATION: BN.from(3600 * 24 * 10), //10 days
   REWARDS_PER_EPOCH: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((a) => BN.from("10000000000").mul(a)), // = [10000000000, 20000000000, ..]
   NUMBER_OF_EPOCHS: BN.from(20),
   VESTING_EPOCHS: BN.from(4),
-  TOTAL_NUMERATOR: BN.from(10 ** 9),
+  TOTAL_NUMERATOR,
+  ALLOCATION_SETTINGS: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100].map((a) => TOTAL_NUMERATOR.mul(a).div(100))
 };
 
 export async function liquidityMiningFixture(
@@ -137,12 +140,12 @@ export async function liquidityMiningFixture(
   );
   await aLiquidityMining.setAllocationSetting(
     [consts.T0.add(consts.SIX_MONTH)],
-    [params.TOTAL_NUMERATOR],
+    [params.ALLOCATION_SETTINGS[0]],
     consts.HIGH_GAS_OVERRIDE
   );
   await cLiquidityMining.setAllocationSetting(
     [consts.T0_C.add(consts.SIX_MONTH)],
-    [params.TOTAL_NUMERATOR],
+    [params.ALLOCATION_SETTINGS[0]],
     consts.HIGH_GAS_OVERRIDE
   );
 
