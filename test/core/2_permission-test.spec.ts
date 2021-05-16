@@ -23,8 +23,8 @@ describe('permission-test', async () => {
   let tokenUSDT: Token;
   const amount: BN = BN.from(10).pow(6);
   before(async () => {
-    globalSnapshotId = await evm_snapshot();
     const fixture = await loadFixture(marketFixture);
+    globalSnapshotId = await evm_snapshot();
     router = fixture.core.router;
     marketReader = fixture.core.marketReader;
     xyt = fixture.aForge.aFutureYieldToken;
