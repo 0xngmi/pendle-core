@@ -7,7 +7,7 @@ const bN = (s: string): bigNumber => {
   return new bigNumber(s);
 };
 
-import { devConstants, kovanConstants } from '../helpers/deployHelpers';
+import { devConstants, kovanConstants } from '../../helpers/constants';
 async function main() {
   // const [deployer] = await hre.ethers.getSigners();
   const network = hre.network.name;
@@ -27,6 +27,7 @@ async function main() {
 
   // Joseph account which already has a borrow position of 100 USDT
   // and a collateral of 200 USDC
+  // const user = '0xE8A4095437dd20a01e66115dE33164eBCEA9B09a';
   const user = '0xE8A4095437dd20a01e66115dE33164eBCEA9B09a';
 
   console.log(`\t cUSDC address = ${cUSDC.address}`);

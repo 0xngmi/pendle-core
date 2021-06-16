@@ -5,7 +5,7 @@ const bN = (s: string): bigNumber => {
   return new bigNumber(s);
 };
 
-import { devConstants, kovanConstants } from '../helpers/deployHelpers';
+import { devConstants, kovanConstants } from '../../helpers/constants';
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
   const network = hre.network.name;
@@ -23,13 +23,14 @@ async function main() {
     process.exit(1);
   }
 
-  const usdtCompoundContract = await hre.ethers.getContractAt('TestToken', consts.tokens.USDT_COMPOUND.address);
+  const underlyingAssetContract = await hre.ethers.getContractAt('TestToken', consts.tokens.DAI.address);
   // const usdtAaveContract = await hre.ethers.getContractAt('IERC20', consts.tokens.USDT_AAVE.address);
+  const baseTokenContract = await hre.ethers.getContractAt('TestToken', consts.tokens.USDT_COMPOUND.address);
 
-  const xytAddress = '0x55c9bcd1327477541c31d80366369505f8e24bde'; //XYT Compound USDT 28JUL2021
+  const xytAddress = '0xF3FC34298d3883b1c65D7e37FCA12184240e47cd'; //XYT Compound USDT 28JUL2021
 
-  const marketAddress = '0xD992e0F45BE5C403bc0FDF7EFBA29C9014fF3807'; // XYT-cUSDT-28JUL2021 vs USDT market
-  const EXPIRY = 1627430400; // 28JUL2021
+  const marketAddress = '0x2c49cf6BbA5B6263D15c2afE79d98fa8A0386eC2'; // XYT-cUSDT-28JUL2021 vs USDT market
+  const EXPIRY = 1672272000; // 28JUL2021
 
   // const data = await getContractFromDeployment(hre, deployment, 'PendleData');
   const xyt = await hre.ethers.getContractAt('PendleFutureYieldToken', xytAddress);
@@ -37,13 +38,13 @@ async function main() {
   const forgeAddress = await xyt.forge();
   const compoundForge = await hre.ethers.getContractAt('PendleCompoundForge', forgeAddress);
   const xytTokenDecimal = await xyt.decimals(); // should be 8 for xyt-cUSDT
-  const baseTokenDecimal = await usdtCompoundContract.decimals(); // should be 6 for USDT
-  const underlyingAssetDecimal = await usdtCompoundContract.decimals(); // should be 6 for USDT. Note that this just happens to be the same as the baseToken
+  const baseTokenDecimal = await baseTokenContract.decimals(); // should be 6 for USDT
+  const underlyingAssetDecimal = await underlyingAssetContract.decimals(); // should be 6 for USDT. Note that this just happens to be the same as the baseToken
 
   // Step 1:
   // if for Aave, it will always be 1e18
   // since this is Compound, its the initialRate()
-  const principalPerXYTRawScaled1e18 = await compoundForge.initialRate(usdtCompoundContract.address);
+  const principalPerXYTRawScaled1e18 = await compoundForge.initialRate(underlyingAssetContract.address);
   console.log(`Step 1: principalPerXYTRawScaled1e18 = ${principalPerXYTRawScaled1e18}`);
 
   // Step 2:
@@ -60,6 +61,9 @@ async function main() {
   const xytWeight = bN(reserveData.xytWeight.toString());
   const tokenBalance = bN(reserveData.tokenBalance.toString());
   const tokenWeight = bN(reserveData.tokenWeight.toString());
+  console.log(`xytBalance = ${xytBalance}, tokenBalance = ${tokenBalance}`);
+  console.log(`xytTokenDecimal = ${xytTokenDecimal}, baseTokenDecimal=${baseTokenDecimal} underlyingAssetDecimal=${underlyingAssetDecimal}`);
+
   const xytPriceInBaseToken = tokenBalance
     .times(xytWeight)
     .div(xytBalance.times(tokenWeight))

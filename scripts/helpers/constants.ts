@@ -163,9 +163,8 @@ export const kovanConstants = {
     },
     DAI: {
       address: '0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa',
-      decimals: 8,
-      compound: '0xf0d0eb522cfa50b716b3b1604c4f0fa6f04376ad',
-    },
+      decimals: 18,
+      compound: '0xf0d0eb522cfa50b716b3b1604c4f0fa6f04376ad'
   },
 };
 

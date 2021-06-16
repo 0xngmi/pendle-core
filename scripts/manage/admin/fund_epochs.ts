@@ -18,7 +18,9 @@ async function main() {
 
   console.log(`\n\tNetwork = ${network}, deployer = ${deployer.address}, liqMining=${liqMiningContract.address}`);
   console.log(`rewards = ${rewards}`);
-  await sendAndWaitForTransaction(hre, liqMiningContract.fund, 'Fund Liq Mining', [rewards]);
+  const details = await liqMiningContract.populateTransaction.fund(rewards);
+  console.log(`tnx details  = ${JSON.stringify(details, null, '  ')}`);
+  // await sendAndWaitForTransaction(hre, liqMiningContract.fund, 'Fund Liq Mining', [rewards]);
 }
 
 main()
